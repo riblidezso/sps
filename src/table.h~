@@ -1,0 +1,17 @@
+#ifndef TABLE_H
+#define TABLE_H
+ 
+#include <iostream>
+#include <vector>
+
+struct table{
+public:
+	size_t columns, rows;
+
+	std::vector<double> container;
+
+	double& operator()(size_t i, size_t j);
+	double operator()(size_t i, size_t j) const;
+};
+
+#endif

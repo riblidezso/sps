@@ -1,0 +1,26 @@
+#include <iostream>
+
+#include "cb_data.h"
+//#include "table.h"
+
+
+int main()
+{
+	cb_data model;
+
+	model.read_buff_atof();
+
+	model.get_data_from_model();
+
+	model.dust();
+
+	model.get_age();
+
+	model.get_sfr();
+
+	model.opencl_convolve();	
+
+	model.write_convresult();
+
+	return 0;
+}
