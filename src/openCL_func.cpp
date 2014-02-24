@@ -161,10 +161,18 @@ int cb_data::opencl_convolve()
 		device = devices[device_choice];
 
 	/*Step 3: Create context.*/
-	cl_context context = clCreateContext(NULL,1, devices,NULL,NULL,NULL);
-	
+	cl_context context = clCreateContext(NULL,1, devices,NULL,NULL,&status);
+	if (status!=0)
+	{
+		std::cout<<"ERROR creating context: "<<status<<std::endl;
+	}
+
 	/*Step 4: Creating command queue associate with the context.*/
-	cl_command_queue commandQueue = clCreateCommandQueue(context, device, 0, NULL);
+	cl_command_queue commandQueue = clCreateCommandQueue(context, device, 0, &status);
+	if (status!=0)
+	{
+		std::cout<<"ERROR creating commandqueue: "<<status<<std::endl;
+	}
 
 	/*Step 5: Create program object */
 	const char *filename = "conv_opencl.cl";
@@ -172,16 +180,39 @@ int cb_data::opencl_convolve()
 	status = convertToString(filename, sourceStr);
 	const char *source = sourceStr.c_str();
 	size_t sourceSize[] = {strlen(source)};
-	cl_program program = clCreateProgramWithSource(context, 1, &source, sourceSize, NULL);
-	
+	cl_program program = clCreateProgramWithSource(context, 1, &source, sourceSize, &status);
+	if (status!=0)
+	{
+		std::cout<<"ERROR creating program: "<<status<<std::endl;
+	}	
+
 	/*Step 6: Build program. */
 	status=clBuildProgram(program, 1,devices,NULL,NULL,NULL);
+	if (status!=0)
+	{
+		std::cout<<"ERROR building program: "<<status<<std::endl;
+
+		//Getting build log
+		size_t logsize=0;
+		clGetProgramBuildInfo(program,device,CL_PROGRAM_BUILD_LOG,0,NULL,&logsize);
+		std::cout<<logsize<<std::endl;
+		char* log;
+		log = new char[logsize];	
+		clGetProgramBuildInfo(program,device,CL_PROGRAM_BUILD_LOG,logsize,log,NULL);
+		std::cout<<"log:\n "<<log<<std::endl;
+		delete[] log;
+	}
 	
 	/*Step 7: Allocate memory */
-	cl_mem rawdata_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, rawdata.size() * sizeof(double),(void *) rawdata.data(), NULL);
-	cl_mem time_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, ntimesteps * sizeof(double),(void *) time.data(), NULL);
-	cl_mem age_vector_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, n_ages * sizeof(double) , (void *) ages.data(), NULL);
-	cl_mem outputBuffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY , nspecsteps * n_ages * sizeof(double) , NULL, NULL);
+	cl_mem rawdata_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, rawdata.size() * sizeof(double),(void *) rawdata.data(), &status);
+	cl_mem time_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, ntimesteps * sizeof(double),(void *) time.data(), &status);
+	cl_mem age_vector_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, n_ages * sizeof(double) , (void *) ages.data(), &status);
+	cl_mem outputBuffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY , nspecsteps * n_ages * sizeof(double) , NULL, &status);
+	if (status!=0)
+	{
+		std::cout<<"ERROR creating buffers: "<<status<<std::endl;
+	}
+
 
 	/*Step 8: Create kernel object */
 	cl_kernel kernel = clCreateKernel(program,"conv_opencl", NULL);
@@ -197,28 +228,46 @@ int cb_data::opencl_convolve()
 	status = clSetKernelArg(kernel, 7, sizeof(int), &nfillingdata);
 	status = clSetKernelArg(kernel, 8, sizeof(double), &tau);
 	status = clSetKernelArg(kernel, 9, sizeof(int), &n_ages);
+	if (status!=0)
+	{
+		std::cout<<"ERROR setting kernel arguments: "<<status<<std::endl;
+	}
 
 	/*Step 10: Running the kernel.*/
-
 	size_t global_work_size[1] = {static_cast<size_t>(nspecsteps)};
 	status = clEnqueueNDRangeKernel(commandQueue, kernel, 1, NULL, global_work_size, NULL, 0, NULL, NULL);
-	
+	if (status!=0)
+	{
+		std::cout<<"ERROR running kernel: "<<status<<std::endl;
+	}	
+
+
 	/*Step 11: Read the result back to host memory.*/
 	status = clEnqueueReadBuffer(commandQueue, outputBuffer, CL_TRUE, 0, n_ages  * nspecsteps * sizeof(double) , conv_result.container.data(), 0, NULL, NULL);
+	if (status!=0)
+	{
+		std::cout<<"ERROR reading buffer: "<<status<<std::endl;
+	}
 
 	/*Step 12: Clean the resources.*/
-
-	status = clReleaseKernel(kernel);				//Release kernel.
-	status = clReleaseProgram(program);				//Release the program object.
+	status = clReleaseKernel(kernel);			//Release kernel.
+	status = clReleaseProgram(program);			//Release the program object.
 	status = clReleaseMemObject(rawdata_d);			//Release mem objects.
 	status = clReleaseMemObject(time_d);
 	status = clReleaseMemObject(outputBuffer);
 	status = clReleaseMemObject(age_vector_d);
-	status = clReleaseCommandQueue(commandQueue);	//Release  Command queue.
-	status = clReleaseContext(context);				//Release context.
-
+	status = clReleaseCommandQueue(commandQueue);		//Release  Command queue.
+	status = clReleaseContext(context);			//Release context.
+	if (status!=0)
+	{
+		std::cout<<"ERROR releasing objects: "<<status<<std::endl;
+	}
 	delete[] devices;
 
-	std::cout<<"Passed!\n";
+	if (status==0)
+	{
+		std::cout<<"Passed!"<<std::endl;
+	}
+	
 	return SUCCESS;
 } 
