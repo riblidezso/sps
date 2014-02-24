@@ -1,3 +1,4 @@
+#pragma OPENCL EXTENSION cl_khr_fp64 : enable
 __kernel void conv_opencl ( __global double* rawdata ,
 					__global double* time, 
 					__global double* output , 
