@@ -17,23 +17,60 @@ class cb_data{
 
 public: //functions
 
+/*quick tests*/
+	int quick_test();
+	int quick_test_openCL();
+
+/*interactive functions*/
 	//Reading model from an ASCII file
-	int read_buff_atof();
-	//gets some important data from model
-	int get_data_from_model();
+	int usr_read_buff_atof();
 	//gets dust parameters and modifies data
+	int usr_get_dust();
+	//gets the ages of galaxies	
+	int usr_get_age();
+	//gets sfr parameters
+	int usr_get_sfr();
+	//writes the result in a table format
+	int usr_write_convresult();
+
+/*functions*/
+
+	//Reading model from an ASCII file 
+	int read_buff_atof(std::string infilename);
+	//writes the result in a table format
+	int write_convresult(std::string outfilename);
+
+	//sets dst parameters
+	void set_dust(double tau_v_value,double mu_value);
+	//sets age
+	void set_age(std::vector<double> age_values);
+	void set_sfr(double tau_value);
+
+/*	//gets dust parameters and modifies data
 	int dust();
 	//gets the ages of galaxies	
-	int get_age();
+	int age();
 	//gets sfr parameters
 	int get_sfr();
 	//writes the result in a table format
-	int write_convresult();
+	int write_convresult(std::string output_filename);
 
+*/
+
+/*routines*/
+	
 	//The c++ version of the convolution:
 	int conv_to_age_vector();
 	//The openCL convolution
 	int opencl_convolve();
+
+private: //functions
+
+	//gets some important data from model
+	//called by read_buff_atof()
+	int get_data_from_model();
+
+
 
 private: //data
 

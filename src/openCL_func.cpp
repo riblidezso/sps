@@ -13,6 +13,81 @@
 #define SUCCESS 0
 #define FAILURE 1
 
+///
+//Quick test
+//
+//tries to open input/model.txt
+//from different places
+//
+//uses default dust and a simple age vector
+
+int cb_data::quick_test_openCL()
+{
+	std::cout<<"testing ... "<<std::endl;
+
+	int err=0;
+	int branch=0;
+	//Reading model from an ASCII file
+	//tries top open it from different directories
+	err=read_buff_atof("../input/model.txt");
+	if (err==1)
+	{
+		err=read_buff_atof("input/model.txt");
+		branch=1;
+	}
+	if (err==1)
+	{
+		err=read_buff_atof("model.txt");
+		branch=2;
+	}
+	if (err==1)
+	{
+		err=read_buff_atof("../../input/model.txt");
+		branch=3;
+	}
+	if(err==1)
+	{
+		std::cout<<"ERROR could not find model file"<<std::endl;
+		return 1;
+	}
+	//set dust parameters and modify data
+	set_dust(1,0.3);
+						
+	//sets the age of galaxies
+	std::vector<double> temp;
+	for(int i=1;i<5;i++)
+	temp.push_back(i);
+	set_age(temp);
+
+	//sets sfr parameters
+	set_sfr(3);
+
+	//The c++ version of the convolution:
+	opencl_convolve();	
+
+	//writes the result in a table format
+	if (branch==0)
+	{
+		err=write_convresult("../output/quicktest.txt");
+	}
+	if (branch==1)
+	{
+		err=write_convresult("output/quicktest.txt");
+	}
+	if (branch==2)
+	{
+		err=write_convresult("quicktest.txt");
+	}
+	if (branch==3)
+	{
+		err=write_convresult("../../output/quicktest.txt");
+	}
+	
+	return 0;
+}
+
+
+
 using namespace std;
 
 //function from ATI SDK

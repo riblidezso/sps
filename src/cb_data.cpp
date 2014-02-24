@@ -1,185 +1,260 @@
 #include "cb_data.h"
 #include "table.h"
 
+///
+//Quick test
+//
+//tries to open input/model.txt
+//from different places
+//
+//uses default dust and a simple age vector 
+int cb_data::quick_test()
+{
+	std::cout<<"testing ... "<<std::endl;
 
+	int err=0;
+	int branch=0;
+	//Reading model from an ASCII file
+	//tries top open it from different directories
+	err=read_buff_atof("../input/model.txt");
+	if (err==1)
+	{
+		err=read_buff_atof("input/model.txt");
+		branch=1;
+	}
+	if (err==1)
+	{
+		err=read_buff_atof("model.txt");
+		branch=2;
+	}
+	if (err==1)
+	{
+		err=read_buff_atof("../../input/model.txt");
+		branch=3;
+	}
+	if(err==1)
+	{
+		std::cout<<"ERROR could not find model file"<<std::endl;
+		return 1;
+	}
+	//set dust parameters and modify data
+	set_dust(1,0.3);
+						
+	//sets the age of galaxies
+	std::vector<double> temp;
+	for(int i=1;i<5;i++)
+	temp.push_back(i);
+	set_age(temp);
+
+	//sets sfr parameters
+	set_sfr(3);
+
+	//The c++ version of the convolution:
+	conv_to_age_vector();	
+
+	//writes the result in a table format
+	if (branch==0)
+	{
+		err=write_convresult("../output/quicktest.txt");
+	}
+	if (branch==1)
+	{
+		err=write_convresult("output/quicktest.txt");
+	}
+	if (branch==2)
+	{
+		err=write_convresult("quicktest.txt");
+	}
+	if (branch==3)
+	{
+		err=write_convresult("../../output/quicktest.txt");
+	}
+	
+	return 0;
+}
+
+///
 //Reading model from an ASCII file
 //
-//reads all numbers separated with whitespace from an ascii file 
-//into a vector of doubles (rawdata)
-
-int cb_data::read_buff_atof()
+int cb_data::usr_read_buff_atof()
 {
-	#define NUMBER_MAX_LEN 128 	// the size of the buffer of numbers
-	#define BUFFERSIZE 1024		// the size of chunks read in binary
-
 	std::cout<<"\nReading in ssp model data "<<std::endl;
+	int error;			//indicator
+	bool tryagain;		//indicator to terminate loop
 
-	bool tryagain;
 	do
 	{
 		tryagain=false;
-		try
+
+		// getting filename											
+		std::cout<<"input filename: ";
+		std::string temp_line;
+		getline(std::cin,temp_line);
+		std::stringstream temp_sstr;
+		temp_sstr<<temp_line;
+		std::string infilename;
+		temp_sstr>>infilename;
+
+		error=read_buff_atof(infilename);
+
+		if (error!=0)
 		{
-			// getting filename											
-			std::cout<<"input filename: ";
-			std::string temp_line;
-			getline(std::cin,temp_line);
-			std::stringstream temp_sstr;
-			temp_sstr<<temp_line;
-			std::string infilename;
-			temp_sstr>>infilename;
+			tryagain=true;
+		}
 
-			//starting clock
-			clock_t t1, t2;
-			t1 = clock();
+	}while(tryagain);
 
-			// open file in binary i/o
-			std::ifstream infile(infilename.c_str(), std::ios::binary |std::ios::ate);
+	return 0;
+}
 
-			// checking filename
-			if(!(infile))
-			{
-				std::cout<<"\nERROR CAN'T OPEN FILE: "<<infilename<<"\n"<<std::endl;
-				throw 1;
-			}
+///
+//Actual reading function
+//
+//reads all numbers separated with whitespaces from an ASCII file 
+//into a vector of doubles (rawdata)
+//
+int cb_data::read_buff_atof(std::string infilename)
+{
+	#define NUM_MAX_LEN 128 	// the size of the buffer of numbers
+	#define BUFFERSIZE 1024		// the size of chunks read in binary
 
-			//info
-			std::cout<<"reading in file: "<<infilename<<"..."<<std::endl;
-
-			// getting the size of the file
-			std::ifstream::pos_type size;							
-			size = infile.tellg();	
-			// go to the begginging of file								
-			infile.seekg (0, std::ios::beg);						
-
-			// to store chunks of file:
-			char* file_buffer= new char[BUFFERSIZE];
-			// the size of sensible data in the file_buffer
-			// not BUFFERSIZE at the end of the file!		
-			int file_buffer_size=BUFFERSIZE;
-			// number of chunks already read	
-			int chunks_read=0;			
-			// to store numbers temporarily:
-			static char num_buffer[NUMBER_MAX_LEN];
-			// pointer inside the buffer, resetting it first:	
-			int bufferpos=0;
-			// stores the current character in file:			
-			int c;					
-			// boolean used as indicator to terminate the loop	
-			bool end_reading = false;
-			// boolean to discard numbers inside text: like "Padova1994"				
-			bool potential_number = true;
-			// boolean for  "." "+" "e" to be identified as not numbers		
-			bool inside_number = false;		
-
-			do
-			{	
-				// checking if there are BUFFERSIZE char to read in left
-				if(((chunks_read+1)*BUFFERSIZE)<size)			
-				{												
-					// then reading a chunk and ++ counter
-					infile.read((char*)(&file_buffer[0]), BUFFERSIZE);
-					chunks_read++;
-				}
-				// reading last chunk
-				else											
-				{	
-					// setting buffer data size,setting end_reading indicator
-					infile.read((char*)(&file_buffer[0]), ( (int) size - (chunks_read*BUFFERSIZE)));
-					file_buffer_size= ((int) size - (chunks_read*BUFFERSIZE));
-					end_reading=true;
-				}
-				// getting numbers out of buffer;
-				for(int i=0; i<file_buffer_size  ;i++) 				
-				{
-					c = file_buffer[i];
-
-					// if current character is part of a number: append it to end of buffer
-					if (potential_number && isdigit(c) )
-					{									
-						num_buffer[bufferpos] = c;	
-						bufferpos++;			 				
-				
-						// error if the number is too long
-						if (bufferpos == NUMBER_MAX_LEN)	
-						{
-							std::cerr<<"\nError: Too long numbers\n"<<std::endl;
-							infile.close();
-							throw 2;
-						}
-				
-						//set indicator
-						inside_number=true;	
-					}
-					// again if current character is part of a number: append it to end of buffer
-					else if (inside_number && ( c == '.' || c == 'e' || c == 'E'|| c == '+' || c == '-' ) )
-					{
-						num_buffer[bufferpos] = c;
-						bufferpos++;
-				
-						// error if the number is too long
-						if (bufferpos == NUMBER_MAX_LEN)	
-						{
-							std::cerr<<"\nError: Too long numbers\n"<<std::endl;
-							infile.close();
-							throw 2;
-						}
-
-						//set indicator
-						inside_number=true;	
-					}
-					else
-					{
-						// if buffer contains a number, read it
-						if (bufferpos > 0)
-						{
-							// add zero at the end of number buffer
-							num_buffer[bufferpos] = 0;
-							// parse number
-							rawdata.push_back(atof(num_buffer));
-							// reset number buffer position to zero
-							bufferpos = 0;
-						}
-
-						// after whitespace there might be data to read				
-						if (c==' ' || c=='\n')
-						{
-							potential_number=true;			
-						}
-						// if the last char is not a number nor a whitespace
-						// then the next number is not a data to read (like "Padova1994")
-						else
-						{
-							potential_number=false;			
-						}										
-						inside_number=false;					
-					}
-				}
-			}while(!end_reading);// if end reading is true, we should end reading
-		
-			infile.close();
-
-			//get time
-			t2 = clock();
-			double diff = (((double)t2 - (double)t1)/CLOCKS_PER_SEC);
+	//starting clock
+	clock_t t1, t2;
+	t1 = clock();
 	
-			//some info out
-			std::cout<<rawdata.size()<<" numbers read"<<std::endl;
-			std::cout<< "It took "<< diff <<" second(s)."<< std::endl;
+	// open file in binary i/o
+	std::ifstream infile(infilename.c_str(), std::ios::binary |std::ios::ate);
 
-		}catch(int e)
+	// checking filename
+	if(!(infile))
+	{
+		std::cout<<"\nERROR CAN'T OPEN FILE: "<<infilename<<"\n"<<std::endl;
+		return 1;
+	}
+
+	//info out
+	std::cout<<"reading in file: '"<<infilename<<"'\n..."<<std::endl;
+
+	// getting the size of the file
+	std::ifstream::pos_type size;							
+	size = infile.tellg();	
+	// go to the begginging of file								
+	infile.seekg (0, std::ios::beg);
+
+	
+	char* file_buf=new char[BUFFERSIZE];// to store chunks of file:
+			
+	int file_buf_size=BUFFERSIZE;		// the size of sensible data in the file_buffer
+										// not BUFFERSIZE at the end of the file!
+	
+	int chunks_read=0;					// number of chunks already read	
+	static char num_buffer[NUM_MAX_LEN];// to store numbers temporarily:
+	int bufferpos=0;					// pointer inside num_buffer	
+	int c;								//stores the current character in file:
+	bool end_reading = false;			//indicator to terminate the loop					
+	bool potential_number = true;		//indicator to discard numbers(ie.:"Padova1994") 	
+	bool inside_number = false;			//indicator		
+
+	do
+	{	
+		//checking if there are BUFFERSIZE char to read in left
+		if(((chunks_read+1)*BUFFERSIZE)<size)			
+		{												
+			//then reading a chunk and ++ counter
+			infile.read((char*)(&file_buf[0]), BUFFERSIZE);
+			chunks_read++;
+		}
+		//reading last chunk
+		else											
+		{	
+			//setting buffer data size,setting end_reading indicator
+			infile.read((char*)(&file_buf[0]),((int)size-(chunks_read*BUFFERSIZE)));
+			file_buf_size=((int)size-(chunks_read*BUFFERSIZE));
+			end_reading=true;
+		}
+		// getting numbers out of buffer;
+		for(int i=0; i<file_buf_size  ;i++) 				
 		{
-			if (e==1)
-			{
-				tryagain=true;
+			c = file_buf[i];
+			
+			//if current character is part of a number: append it to the buffer
+			if (potential_number && isdigit(c) )
+			{									
+				num_buffer[bufferpos] = c;	
+				bufferpos++;			 				
+				
+				// error if the number is too long
+				if (bufferpos == NUM_MAX_LEN)	
+				{
+					std::cerr<<"\nError: Too long numbers\n"<<std::endl;
+					infile.close();
+					return 2;
+				}
+			
+				//set indicator
+				inside_number=true;	
 			}
-
-			if (e==2)
+			//if current character is part of a number: append it to the buffer
+			else if(inside_number&&(c=='.'||c=='e'||c=='E'||c=='+'||c=='-'))
 			{
-				tryagain=true;
+				num_buffer[bufferpos] = c;
+				bufferpos++;
+		
+				// error if the number is too long
+				if (bufferpos == NUM_MAX_LEN)	
+				{
+					std::cerr<<"\nError: Too long numbers\n"<<std::endl;
+					infile.close();
+					return 2;
+				}
+						
+				//set indicator
+				inside_number=true;	
+			}
+			else
+			{
+				// if buffer contains a number, read it
+				if (bufferpos > 0)
+				{
+
+					// add zero at the end of number buffer
+					num_buffer[bufferpos] = 0;
+					// parse number
+					rawdata.push_back(atof(num_buffer));
+					// reset number buffer position to zero
+					bufferpos = 0;
+				}
+
+				// after whitespace there might be data to read				
+				if (c==' ' || c=='\n')
+				{
+					potential_number=true;			
+				}
+				//if the last char is not a number nor a whitespace
+				//then the next number is 
+				//not a data to be read (like "Padova1994")
+				else
+				{
+					potential_number=false;			
+				}										
+				inside_number=false;					
 			}
 		}
-	}while(tryagain);
+	}while(!end_reading);// if end reading is true, we should end reading
+		
+	infile.close();
+
+	//get time
+	t2 = clock();
+	double diff = (((double)t2 - (double)t1)/CLOCKS_PER_SEC);
+	
+	//some info out
+	std::cout<<rawdata.size()<<" numbers read"<<std::endl;
+	std::cout<< "It took "<< diff <<" second(s)."<< std::endl;
+
+
+	//getting important data from the raw vector
+	get_data_from_model();
 
 	return 0;
 }
@@ -223,7 +298,7 @@ int cb_data::get_data_from_model()
 //gets dust_tauv, dust_mu and modifies model data
 //calls dust_modif
 //
-int cb_data::dust()
+int cb_data::usr_get_dust()
 {
 	bool tryagain;	
 	std::cout<<"\nDust"<<std::endl;
@@ -252,6 +327,8 @@ int cb_data::dust()
 				std::stringstream sstr;
 				sstr<<temp_line;
 				sstr>>dust_tau_v;
+				//if no value was given we use default
+				if (temp_line.size()==0) dust_tau_v=1;
 
 				//get the line of ages
 				std::cout<<"Mu parameter: (default is: 0.3 ) ";
@@ -260,6 +337,8 @@ int cb_data::dust()
 				std::stringstream sstr1;
 				sstr1<<temp_line1;
 				sstr1>>dust_mu;
+				//if no value was given we use default
+				if (temp_line1.size()==0) dust_mu=0.3;
 
 				//modifying raw data
 				dust_modif();
@@ -280,17 +359,27 @@ int cb_data::dust()
 			if (ex==1){tryagain=true;}
 		}
 	}while(tryagain);
-	
+
 	return 0;
 }
 
+///
+//sets dust parameters 
+//calls dust_modif
+//
+void cb_data::set_dust(double tau_v_value, double mu_value)
+{
+	dust_tau_v=tau_v_value;
+	dust_mu=mu_value;
+	dust_modif();
+	return;
+}
+
+///
 //modifies rawdata, due to dust
 //
 void cb_data::dust_modif()
 {
-
-
-	
 	//Dust factors:
 	double dust_tau; 			// tau_v or mu*tau_v
 	double exponent; 			// lambda/5500
@@ -328,7 +417,7 @@ void cb_data::dust_modif()
 //
 //either from a file or from stdin
 //
-int cb_data::get_age()
+int cb_data::usr_get_age()
 {
 	bool tryagain;	
 	std::cout<<"\nGetting ages to convolve to"<<std::endl;
@@ -430,25 +519,59 @@ int cb_data::get_age()
 	return 0;
 }
 
+void cb_data::set_age(std::vector<double> age_values)
+{
+	for(int i=0;i<age_values.size();i++)
+		ages.push_back(age_values[i] * 1e+9);
+	
+	n_ages=age_values.size();
+	return;
+}
+
+
 //gets sfr parameters
 //
 //no error handling yet
 //
-int cb_data::get_sfr()
+int cb_data::usr_get_sfr()
 {
 	std::cout<<"\nStar formation rate"<<std::endl;
-	std::cout<<"Give the Tau of the exponential star formation rate, in Gy: ";
-	std::string temp_line;
-	getline(std::cin,temp_line);
-	std::stringstream temp_sstr;
-	temp_sstr<<temp_line;
-	double temp_d;
-	temp_sstr>>temp_d;
-	
-	tau=temp_d*1e+9;
+
+	bool tryagain;
+	do
+	{
+		try
+		{
+			tryagain=false;
+
+			std::cout<<"Give the Tau of the exponential star formation rate, in Gy: ";
+			std::string temp_line;
+			getline(std::cin,temp_line);
+			std::stringstream temp_sstr;
+			temp_sstr<<temp_line;
+			double temp_d=0;
+			temp_sstr>>temp_d;
+
+			if(temp_d==0)
+			{
+				throw 1;
+			}
+		
+			tau=temp_d*1e+9;
+		}catch(int e)
+		{
+		if (e==1) tryagain=true;
+		}
+
+	}while(tryagain);
+
 	return 0;
 }
 
+void cb_data::set_sfr(double tau_value)
+{
+	tau=tau_value*1e+9;
+}
 
 //returns star formation rate
 //
@@ -495,69 +618,85 @@ int cb_data::conv_to_age_vector()
 	return 0;
 }
 
-int cb_data::write_convresult()
+///
+//writes the result in a table format
+//from stdin input filename
+//
+//separated with whitespaces
+//no " " at the end of file
+//no /n at theend of file
+//
+int cb_data::usr_write_convresult()
 {
-	//boolean indicating failure or succes
-	bool tryagain;
+	bool tryagain;  // indicator for loop
+	int error;		// indicating failure or succes
 
 	std::cout<<"\nWriting convolution results "<<std::endl;
 	do
 	{
 		//setting indicator
 		tryagain=false;
-		try{		
-			//getting output filename
-			std::cout<<"output filename: ";
-			std::string temp_line;
-			getline(std::cin,temp_line);
-			std::stringstream temp_sstr;
-			temp_sstr<<temp_line;
-			std::string outfilename;
-			temp_sstr>>outfilename;
-			std::ofstream outfile(outfilename.c_str());
-   
-   			//Checking filename
-			if(!(outfile))
-			{
-				std::cout<<"ERROR INVALID OUTPUT FILE: "<<outfilename<<std::endl;
-				throw 1;
-			}
-
-			time_t tstart, tend;
-			tstart = std::time(0);
-
-			//writing numbers 
-			for(int j=0; j<(nspecsteps-1); j++)
-			{
-				outfile<<wavelengths[j]<<" ";
-				for(int k=0;k<(n_ages-1);k++)
-				{
-					 outfile<<conv_result(j,k)<<" ";
-				}
-				//no " " at the end of lines
-				outfile<<conv_result(j,n_ages-1)<<"\n";
-			}
-			outfile<<wavelengths[nspecsteps-1]<<" ";
-			for(int k=0;k<(n_ages-1);k++)
-			{
-				outfile<<conv_result(nspecsteps-1,k)<<" ";
-			}
+		error=0;
+		
+		//getting output filename
+		std::cout<<"output filename: ";
+		std::string temp_line;
+		getline(std::cin,temp_line);
+		std::stringstream temp_sstr;
+		temp_sstr<<temp_line;
+		std::string outfilename;
+		temp_sstr>>outfilename;
 	
-			//no "\n" at the end of the file
-			outfile<<conv_result(nspecsteps-1,n_ages-1);
-			outfile.close();
-
-			tend = std::time(0);
-
-			//time info out
-			std::cout<<"writing succesful: "<<n_ages<<" spectra written"<<" It took "<< std::difftime(tend, tstart) <<" second(s)."<<std::endl;
-
-		}catch(int e)
-		{
-			if(e==1)	tryagain=true;
-		}
+		error=write_convresult(outfilename);
+		if(error!=0)	
+			tryagain=true;
 
 	}while(tryagain);
 	
 	return 0;
+}
+
+///
+//writes the result in a table format
+//
+//separated with whitespaces
+//no " " at the end of file
+//no /n at theend of file
+//
+int cb_data::write_convresult(std::string outfilename)
+{
+	std::ofstream outfile(outfilename.c_str());
+	//Checking filename
+	if(!(outfile))
+	{
+		std::cout<<"ERROR INVALID OUTPUT FILE: "<<outfilename<<std::endl;
+		return 1;
+	}
+
+	//writing numbers 
+	for(int j=0; j<(nspecsteps-1); j++)
+	{
+		outfile<<wavelengths[j]<<" ";
+		for(int k=0;k<(n_ages-1);k++)
+		{
+			 outfile<<conv_result(j,k)<<" ";
+		}
+		//no " " at the end of lines
+		outfile<<conv_result(j,n_ages-1)<<"\n";
+	}
+	outfile<<wavelengths[nspecsteps-1]<<" ";
+	for(int k=0;k<(n_ages-1);k++)
+	{
+		outfile<<conv_result(nspecsteps-1,k)<<" ";
+	}
+	
+	//no "\n" at the end of the file
+	outfile<<conv_result(nspecsteps-1,n_ages-1);
+	outfile.close();
+
+	//info out
+	std::cout<<"writing succesful: "<<n_ages<<" spectra written";
+
+	return 0;
+
 }
