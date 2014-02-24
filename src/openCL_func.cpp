@@ -5,7 +5,7 @@
 
 
 //header for openCL
-#include <CL/cl.hpp>
+#include <CL/cl.h>
 
 #include <string.h>
 #include <string>
