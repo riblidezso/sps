@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstring>
 
 #include "cb_data.h"
 #include "table.h"
