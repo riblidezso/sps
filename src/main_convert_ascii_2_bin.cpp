@@ -14,37 +14,6 @@
 
 int main(int argc, char** argv)
 {
-	//commandline arg
-	if(argc>1)
-	{
-		if(strlen(argv[1])==2)
-		{
-		/*	if(argv[1][0]=='-' && argv[1][1]=='t')
-			{
-				int test_err=0;
-				cb_data test_model;
-				test_err=test_model.quick_test();
-				if (test_err==1)
-				{
-					std::cout<<"ERROR something went wrong"<<std::endl;
-					return 1;
-				}
-				else 
-				{
-					std::cout<<"quick test passed"<<std::endl;
-					return 0;
-				}
-			}
-			if(argv[1][0]=='-' && argv[1][1]=='f')
-			{
-				cb_data fake_mes_model;
-				fake_mes_model.create_fake_mes();
-				std::cout<<"fake measurement created"<<std::endl;
-			
-			} 
-			*/
-		}
-	}
 	std::cout<<"Converting ASCII models to binary..."<<std::endl;
 
 	convert_ascii_2_bin conversion;
@@ -105,7 +74,6 @@ int main(int argc, char** argv)
 			outfilename_sstr<<outpath<<imf<<metall<<".bin";
 			outfilename_sstr>>filename;
 			conversion.write_vec_vec_bin(conversion.model, filename);
-			
 		
 		}
 		//second path:

@@ -242,8 +242,7 @@ int convert_ascii_2_bin::get_data_from_raw(std::string imf)
 		{
 			model[i][j]=rawdata[offset+j+i*(nspecsteps+nfillingdata+2)];
 		}
-	}
-													
+	}												
 	return 0;
 } 
 
@@ -284,7 +283,7 @@ int convert_ascii_2_bin::write_vec_vec_bin(std::vector<std::vector<double> >& ou
 	std::cout<<"writing in file: "<<outfilename<<" ... ";
 	for(int i=0;i<outvecvec.size();i++ )
 	{
-		outfile.write( reinterpret_cast<char*>(outvecvec[0].data()),sizeof(double) * outvecvec[0].size() );
+		outfile.write( reinterpret_cast<char*>(outvecvec[i].data()),sizeof(double) * outvecvec[i].size() );
 	}
 	outfile.close();
 
