@@ -6,7 +6,7 @@
 
 #define CHAB_PATH "../input/chab_hr/" 
 #define SALP_PATH "../input/salp_hr/" 
-#define EXTENSION ".ISED_ASCII"
+#define EXTENSION ".ised_ASCII"
 
 #define OUTPATH "../input/bin/"
 #define NO_METALL 6

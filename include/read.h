@@ -28,7 +28,7 @@ public: //functions
 
 	//reads sample_spec
 	//from ascii file
-	int read::usr_read_sample();
+	int usr_read_sample();
 
 public: //data
 

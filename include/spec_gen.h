@@ -45,7 +45,7 @@ public: //functions
 
 	//if no metall interpol
 	//then just choosing one of the models
-	int spec_gen::chose_model(std::vector<std::vector<double> >& original_models, int no_model);
+	int chose_model(std::vector<std::vector<double> >& original_models, int no_model);
 		
 	//modifies rawdata, due to dust
 	void dust_modif();
