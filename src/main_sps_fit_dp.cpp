@@ -2,6 +2,10 @@
 #include <sstream>
 #include <ctime>
 
+#include<float.h>
+#include<math.h>
+
+
 #include <CL/cl.h>
 
 #include <string>
@@ -157,8 +161,6 @@ int main()
 		temp_sstr<<temp_line;
 		temp_sstr>>platform_choice;
 		platform = platforms[platform_choice];
-
-		platform=platforms[1];
 		delete[] platforms;		
 	}
 
@@ -217,8 +219,6 @@ int main()
 	temp_sstr1<<temp_line1;
 	temp_sstr1>>device_choice;
 	device = devices[device_choice];
-
-	device=devices[0];
 
 	//starting clock
 	clock_t t1, t2;
