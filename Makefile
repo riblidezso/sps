@@ -3,7 +3,7 @@ CXX = g++
 LINK = $(CXX)
 
 # Flags
-CXXFLAGS = -I$(IDIR)
+CXXFLAGS = -I$(IDIR) -I../NVIDIA_GPU_COMPUTING_SDK/OpenCL/common/inc
 
 # Paths
 BIN = bin
@@ -14,26 +14,39 @@ IDIR = include
 #Build rules
 # kicsit fura de ez van
  
-$(BIN)/sps_c++ : $(ODIR)/main_c++.o $(ODIR)/cb_data.o $(ODIR)/table.o
+#Building converter
+$(BIN)/convert_ascii_2_bin : $(ODIR)/main_convert_ascii_2_bin.o  $(ODIR)/convert_ascii_2_bin.o 
 	$(LINK) -o $@ $^
 
-$(BIN)/sps_openCL : $(ODIR)/main_openCL.o $(ODIR)/cb_data.o $(ODIR)/openCL_func.o $(ODIR)/table.o
-	$(LINK) -o  $@ $^ -lOpenCL 
-
-$(ODIR)/main_c++.o : $(SRC)/main_c++.cpp $(IDIR)/cb_data.h $(IDIR)/table.h
+$(ODIR)/main_convert_ascii_2_bin.o : $(SRC)/main_convert_ascii_2_bin.cpp
 	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
 
-$(ODIR)/main_openCL.o : $(SRC)/main_openCL.cpp $(IDIR)/cb_data.h $(IDIR)/table.h
+$(ODIR)/convert_ascii_2_bin.o : $(SRC)/convert_ascii_2_bin.cpp $(IDIR)/convert_ascii_2_bin.h
 	$(CXX) -c -o  $@ $< $(CXXFLAGS)
 
-$(ODIR)/cb_data.o : $(SRC)/cb_data.cpp $(IDIR)/cb_data.h $(IDIR)/table.h
+
+ 
+#Building spectrum generator
+$(BIN)/spec_gen : $(ODIR)/main_spec_gen.o  $(ODIR)/spec_gen.o $(ODIR)/read.o 
+	$(LINK) -o $@ $^
+
+$(ODIR)/main_spec_gen.o : $(SRC)/main_spec_gen.cpp
 	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
 
-$(ODIR)/openCL_func.o : $(SRC)/openCL_func.cpp $(IDIR)/cb_data.h $(IDIR)/table.h
-	$(CXX) $(CXXFLAGS) -c -o $@ $< -lOpenCL  
+$(ODIR)/spec_gen.o : $(SRC)/spec_gen.cpp $(IDIR)/spec_gen.h
+	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
 
-$(ODIR)/table.o : $(SRC)/table.cpp $(IDIR)/table.h
-	$(CXX) -c -o  $@ $< $(CXXFLAGS)
+$(ODIR)/read.o : $(SRC)/read.cpp $(IDIR)/read.h 
+	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
+
+
+#Building fitter
+$(BIN)/fit_dp : $(ODIR)/main_sps_fit_dp.o $(ODIR)/read.o 
+	$(LINK) -o $@ $^ -lOpenCL
+
+$(ODIR)/main_sps_fit_dp.o : $(SRC)/main_sps_fit_dp.cpp
+	$(CXX) -c -o  $@ $< $(CXXFLAGS) -lOpenCL
+
 
 .PHONY: clean
 
