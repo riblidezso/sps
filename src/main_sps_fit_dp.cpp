@@ -149,7 +149,7 @@ int main()
 		}
 
 		/*choosing platform*/
-/*		std::cout<<"\nChoose platform: (type the number)"<<std::endl;
+		std::cout<<"\nChoose platform: (type the number)"<<std::endl;
 		int platform_choice;
 		std::string temp_line;
 		getline(std::cin,temp_line);
@@ -157,7 +157,7 @@ int main()
 		temp_sstr<<temp_line;
 		temp_sstr>>platform_choice;
 		platform = platforms[platform_choice];
-*/
+
 		platform=platforms[1];
 		delete[] platforms;		
 	}
@@ -209,7 +209,7 @@ int main()
 	}
 
 	/*choosing device*/
-/*	std::cout<<"\nChoose device: (type the number)"<<std::endl;
+	std::cout<<"\nChoose device: (type the number)"<<std::endl;
 	int device_choice;
 	std::string temp_line1;
 	getline(std::cin,temp_line1);
@@ -217,7 +217,7 @@ int main()
 	temp_sstr1<<temp_line1;
 	temp_sstr1>>device_choice;
 	device = devices[device_choice];
-*/
+
 	device=devices[0];
 
 	//starting clock
@@ -359,6 +359,7 @@ int main()
 
 //later 
 	std::string imf="chabrier";
+	std::cout<<"\nusing chabrier imf \n\n";
 	int offset;
 	if( imf == "chabrier")
 		offset=0;
@@ -369,19 +370,21 @@ int main()
 	int modelno;
 	double sign;
 
-	for(int i=0; i<3000	;i++)
+	std::cout<<"no. of iterations:\n";
+
+	for(int i=0; i<1000	;i++)
 	{
 		//creating random jump
 		sign= ( (rand() % 2) - 0.5)*2;
-		d_dust_tau_v=sign * dust_tau_v * log(1+ rand() / (2 * double(RAND_MAX)));
+		d_dust_tau_v=sign * dust_tau_v * log(1+ rand() / (5 * double(RAND_MAX)));
 		sign= ( (rand() % 2) - 0.5)*2;
-		d_dust_mu=sign * dust_mu* log(1+ rand() / (2 * double(RAND_MAX))) ;
+		d_dust_mu=sign * dust_mu* log(1+ rand() / (5 * double(RAND_MAX))) ;
 		sign= ( (rand() % 2) - 0.5)*2;
-		d_sfr_tau=sign * sfr_tau*  log(1+ rand() / (2  * double(RAND_MAX)));
+		d_sfr_tau=sign * sfr_tau*  log(1+ rand() / (5  * double(RAND_MAX)));
 		sign= ( (rand() % 2) - 0.5)*2;
-		d_age=sign * age*  log(1+  rand() / (2  * double(RAND_MAX)));
+		d_age=sign * age*  log(1+  rand() / (5  * double(RAND_MAX)));
 		sign= ( (rand() % 2) - 0.5)*2;
-		d_metall=sign * metall * log (1+ rand() / ( 2 * double(RAND_MAX))) ;
+		d_metall=sign * metall * log (1+ rand() / ( 5 * double(RAND_MAX))) ;
 
 		/*Step 9: Set Kernel arguments.*/
 		dust_tau_v+=d_dust_tau_v;
@@ -400,6 +403,7 @@ int main()
 			sfr_tau-=d_sfr_tau;
 			age-=d_age;
 			metall-=d_metall;
+			i--;
 			continue;
 		}
 		
@@ -510,13 +514,18 @@ int main()
 
 		if(stay>300)
 		{
+			std::cout<<"fit converged\n";
 			break;
-			std::cout<<"fit_converged\n";
 		}
 
 		//	std::cout<<chi<<"\n ";
 		if( (i % 100) == 0)
-			std::cout<<i<<" \n ";
+			std::cout<<i<<"\n";
+	}
+	
+	if(stay <= 300)
+	{
+		std::cout<<"\nfit did not converge\n\n";
 	}
 	
 	std::vector <double> result (nspecsteps);
@@ -533,7 +542,7 @@ int main()
 	output.push_back(result);
 	write_table_col(output,"../output/fit.txt");
 	
-	std::cout<<"Params:\n";
+	std::cout<<"\nParams:\n";
 	std::cout<<"dust_tau_v="<<dust_tau_v<<std::endl;
 	std::cout<<"dust_mu="<<dust_mu<<std::endl;
 	std::cout<<"sfr_tau="<<sfr_tau<<std::endl;
@@ -542,7 +551,7 @@ int main()
 	std::cout<<"chisquare="<<chi_before<<std::endl;
 
 
-	std::cout<<"ready\n";
+	std::cout<<"\nready\n";
 
 
 	/*Step 12: Clean the resources.*/
@@ -579,7 +588,7 @@ int main()
 	{
 		std::cout<<"Passed!"<<std::endl;
 	}
-	std::cout<<"done";
+	std::cout<<"done (press enter)";
 	std::cin.get();
 
 	return	0;
