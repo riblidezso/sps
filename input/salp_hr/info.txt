@@ -1,0 +1,1 @@
+Salpeter ASCII models only used by converter
