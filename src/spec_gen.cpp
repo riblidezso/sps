@@ -255,7 +255,7 @@ int spec_gen::usr_get_metall()
 	return 0;
 }
 
-//problem on the edges!!!!!!!!!!!!!!!
+
 int spec_gen::metall_interpol(std::vector<std::vector<double> >& original_models)
 {
 	int offset;
@@ -283,6 +283,7 @@ int spec_gen::metall_interpol(std::vector<std::vector<double> >& original_models
 
 		//interpolating
 	
+		//weigths
 		delta=log(model_metal[intpol_model+1] / model_metal[intpol_model]);
 		wd=log(model_metal[intpol_model+1]/metall) / delta;
 		wu=log(metall/model_metal[intpol_model]) / delta;
@@ -349,17 +350,17 @@ void spec_gen::dust_modif()
 		for(int i=0;i<ntimesteps;i++)
 		{
 			//dust_tau depends on the age of the stellar pop
-			if(time[i]<1e7)
+			if(time[i]<1e7) 
 			{
 				dust_tau= -dust_tau_v;
 			}	
-			if(time[i]>1e7)
+			else		
 			{
 				dust_tau= -dust_mu*dust_tau_v;
 			}
 			
 			//the modification
-			model[j+i*(nspecsteps)] *= exp(dust_tau*exponent);
+			model[j+i*nspecsteps] *= exp(dust_tau*exponent);
 		}
 	}
 	return;

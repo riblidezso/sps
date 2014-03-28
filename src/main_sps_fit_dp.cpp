@@ -2,10 +2,6 @@
 #include <sstream>
 #include <ctime>
 
-#include<float.h>
-#include<math.h>
-
-
 #include <CL/cl.h>
 
 #include <string>
@@ -101,11 +97,38 @@ int write_table_col(std::vector< std::vector<double > >& table_to_write, std::st
 	return 0;
 }
 
+///
+//writes a vector to a file
+//
+//one column
+int write_vector(std::vector<double>& vec_to_write, std::string outfilename)
+{
+	std::ofstream outfile(outfilename.c_str());
+	//Checking filename
+	if(!(outfile))
+	{
+		std::cout<<"ERROR INVALID OUTPUT FILE: "<<outfilename<<std::endl;
+		return 1;
+	}
 
+	//writing numbers 
+	for(int j=0; j<vec_to_write.size(); j++)
+    {
+		outfile<<vec_to_write[j]<<"\n";
+    }
+	outfile.close();
+
+	//info out
+	std::cout<<"writing succesful: "<<std::endl;
+
+	return 0;
+}
 
 int main()
 {
-	
+
+
+
 	//reading models
 	read model;
 	model.read_time_bin();
@@ -115,10 +138,6 @@ int main()
 	model.usr_read_sample();
 
 
-
-
-
-	
 	/*Step1: Getting platforms and choose an available one.*/
 	cl_uint numPlatforms;				//the NO. of platforms
 	cl_platform_id* platforms = NULL; 	//id of available platforms
@@ -153,7 +172,7 @@ int main()
 		}
 
 		/*choosing platform*/
-		std::cout<<"\nChoose platform: (type the number)"<<std::endl;
+/*		std::cout<<"\nChoose platform: (type the number)"<<std::endl;
 		int platform_choice;
 		std::string temp_line;
 		getline(std::cin,temp_line);
@@ -161,6 +180,8 @@ int main()
 		temp_sstr<<temp_line;
 		temp_sstr>>platform_choice;
 		platform = platforms[platform_choice];
+*/
+		platform=platforms[1];
 		delete[] platforms;		
 	}
 
@@ -211,7 +232,7 @@ int main()
 	}
 
 	/*choosing device*/
-	std::cout<<"\nChoose device: (type the number)"<<std::endl;
+/*	std::cout<<"\nChoose device: (type the number)"<<std::endl;
 	int device_choice;
 	std::string temp_line1;
 	getline(std::cin,temp_line1);
@@ -219,6 +240,8 @@ int main()
 	temp_sstr1<<temp_line1;
 	temp_sstr1>>device_choice;
 	device = devices[device_choice];
+*/
+	device=devices[0];
 
 	//starting clock
 	clock_t t1, t2;
@@ -278,16 +301,15 @@ int main()
 	cl_mem sample_spec_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, nspecsteps * sizeof(double),(void *) model.sample_spec.data(), &status);
 	
 	//buffers to write
-	cl_mem model_d = clCreateBuffer(context, CL_MEM_READ_WRITE,		sizeof(double) * model.model_cont.size() , NULL, &status);
+	cl_mem model_d = clCreateBuffer(context, CL_MEM_READ_WRITE,		sizeof(double) * ntimesteps * nspecsteps , NULL, &status);
 	cl_mem result_d = clCreateBuffer(context, CL_MEM_READ_WRITE,	sizeof(double) * nspecsteps , NULL, &status);
 	cl_mem factor1_d = clCreateBuffer(context, CL_MEM_WRITE_ONLY,	sizeof(double) * nspecsteps , NULL, &status);
 	cl_mem factor2_d = clCreateBuffer(context, CL_MEM_WRITE_ONLY,	sizeof(double) * nspecsteps , NULL, &status);
-	cl_mem chi_d = clCreateBuffer(context,  CL_MEM_WRITE_ONLY,	sizeof(double) * nspecsteps , NULL, &status);		
+	cl_mem chi_d = clCreateBuffer(context,  CL_MEM_WRITE_ONLY,		sizeof(double) * nspecsteps , NULL, &status);		
 	if (status!=0)
 	{
 		std::cout<<"ERROR creating buffers: "<<status<<std::endl;
 	}
-
 
 	/*Step 8: Create kernel objects */
 	cl_kernel kernel = clCreateKernel(program,"fit_dp_a", &status);
@@ -306,26 +328,32 @@ int main()
 	double sfr_tau;
 	double age;
 	double metall;
-	
-	double d_dust_tau_v;
-	double d_dust_mu;
-	double d_sfr_tau;
-	double d_age;
-	double d_metall;
-	
+
+	double d_dust_tau_v=0;
+	double d_dust_mu=0;
+	double d_sfr_tau=0;
+	double d_age=0;
+	double d_metall=0;
+
+	double best_dust_tau_v;
+	double best_dust_mu;
+	double best_sfr_tau;
+	double best_age;
+	double best_metall;
+
 	std::vector<double> factor1(nspecsteps);		//stores one factor 
 	std::vector<double> factor2(nspecsteps);		//stores an other
 
-	double factor;
 	double temp_1;
 	double temp_2;
+	double factor;
 	double chi;
 	double chi_before=DBL_MAX;
-
-	int stay=0;
+	double best_chi=DBL_MAX;
 
 	std::vector<double> chis(nspecsteps);			//stores the chi sqr values
-
+	std::vector<double> out_chi_evol;				// stores the chi values
+	std::vector <double> result (nspecsteps);		// stores the best fitting model
 		
 	/*Setting kernel arguments*/
 
@@ -344,22 +372,22 @@ int main()
 	status |= clSetKernelArg(kernel, 9, sizeof(int), &ntimesteps);
 
 	//kernel2 
-	status = clSetKernelArg(kernel2, 0, sizeof(cl_mem), &sample_spec_d);
+	status |= clSetKernelArg(kernel2, 0, sizeof(cl_mem), &sample_spec_d);
 	status |= clSetKernelArg(kernel2, 1, sizeof(cl_mem), &result_d);
 	status |= clSetKernelArg(kernel2, 2, sizeof(cl_mem), &chi_d);
 
 	if (status!=0)
 		std::cout<<"ERROR setting kernel arguments: "<<status<<std::endl;
 	
-	dust_tau_v=1;
-	dust_mu=0.3;
-	sfr_tau=3e+09;
-	age=1e+10;
-	metall=0.025;
+	dust_tau_v=0.6;
+	dust_mu=0.2;
+	sfr_tau=6e+09;
+	age=11e+09;
+	metall=0.01;
 
 //later 
 	std::string imf="chabrier";
-	std::cout<<"\nusing chabrier imf \n\n";
+	std::cout<<"\n using chabrier imf \n\n";
 	int offset;
 	if( imf == "chabrier")
 		offset=0;
@@ -372,19 +400,21 @@ int main()
 
 	std::cout<<"no. of iterations:\n";
 
-	for(int i=0; i<1000	;i++)
+	for(int i=0; i<2000	;i++)
 	{
 		//creating random jump
 		sign= ( (rand() % 2) - 0.5)*2;
-		d_dust_tau_v=sign * dust_tau_v * log(1+ rand() / (5 * double(RAND_MAX)));
+		d_dust_tau_v=sign * dust_tau_v * log(1+ rand() / (20 * double(RAND_MAX)));
 		sign= ( (rand() % 2) - 0.5)*2;
-		d_dust_mu=sign * dust_mu* log(1+ rand() / (5 * double(RAND_MAX))) ;
+		d_dust_mu=sign * dust_mu* log(1+ rand() / (20 * double(RAND_MAX))) ;
 		sign= ( (rand() % 2) - 0.5)*2;
-		d_sfr_tau=sign * sfr_tau*  log(1+ rand() / (5  * double(RAND_MAX)));
+		d_sfr_tau=sign * sfr_tau*  log(1+ rand() / (20  * double(RAND_MAX)));
 		sign= ( (rand() % 2) - 0.5)*2;
-		d_age=sign * age*  log(1+  rand() / (5  * double(RAND_MAX)));
+		d_age=sign * age*  log(1+  rand() / (20  * double(RAND_MAX)));
 		sign= ( (rand() % 2) - 0.5)*2;
-		d_metall=sign * metall * log (1+ rand() / ( 5 * double(RAND_MAX))) ;
+		d_metall=sign * metall * log (1+ rand() / ( 20 * double(RAND_MAX))) ;
+		sign= ( (rand() % 2) - 0.5)*2;
+		d_age=sign * age*  log(1+  rand() / (20  * double(RAND_MAX)));
 
 		/*Step 9: Set Kernel arguments.*/
 		dust_tau_v+=d_dust_tau_v;
@@ -448,6 +478,7 @@ int main()
 		{
 			std::cout<<"ERROR reading buffer: "<<status<<std::endl;
 			break;
+
 		}
 
 	//summing factors
@@ -495,60 +526,70 @@ int main()
 			chi+=chis[i];
 		}
 		
-		//if no better than before, we step back
-		if(chi_before<chi)
+		//if no better than before
+		if(chi_before < chi)
 		{
-			dust_tau_v-=d_dust_tau_v;
-			dust_mu-=d_dust_mu;
-			sfr_tau-=d_sfr_tau;
-			age-=d_age;
-			metall-=d_metall;
 
-			stay++;
+			double limit=exp(chi_before-chi) * RAND_MAX;
+			double rand_num=rand();
+
+			if(rand_num > limit )
+			{
+				//rejection
+				dust_tau_v-=d_dust_tau_v;
+				dust_mu-=d_dust_mu;
+				sfr_tau-=d_sfr_tau;
+				age-=d_age;
+				metall-=d_metall;
+			}
+			else
+			{
+				chi_before=chi;
+				out_chi_evol.push_back(chi);
+			}
 		}
-		else
+		else if (best_chi > chi )
 		{
-			stay=0;
+			best_chi=chi;
+
+			best_dust_tau_v=dust_tau_v;
+			best_dust_mu=dust_mu;
+			best_sfr_tau=sfr_tau;
+			best_age=age;
+			best_metall=metall;
+
 			chi_before=chi;
-		}
+			out_chi_evol.push_back(chi);
 
-		if(stay>300)
-		{
-			std::cout<<"fit converged\n";
-			break;
+			
+			status = clEnqueueReadBuffer(commandQueue, result_d, CL_TRUE, 0, nspecsteps * sizeof(double) , result.data(), 0, NULL, NULL);
+			if (status!=0)
+			{
+				std::cout<<"ERROR reading buffer: "<<status<<std::endl;
+			}
 		}
 
 		//	std::cout<<chi<<"\n ";
 		if( (i % 100) == 0)
 			std::cout<<i<<"\n";
 	}
-	
-	if(stay <= 300)
-	{
-		std::cout<<"\nfit did not converge\n\n";
-	}
-	
-	std::vector <double> result (nspecsteps);
+
 	std::vector<std::vector <double> > output;
+
 	output.push_back(model.wavelengths);
 	output.push_back(model.sample_spec);
-
-
-	status = clEnqueueReadBuffer(commandQueue, result_d, CL_TRUE, 0, nspecsteps * sizeof(double) , result.data(), 0, NULL, NULL);
-	if (status!=0)
-	{
-		std::cout<<"ERROR reading buffer: "<<status<<std::endl;
-	}
 	output.push_back(result);
+
 	write_table_col(output,"../output/fit.txt");
+	write_vector(out_chi_evol,"../output/chi_evol.txt");
 	
-	std::cout<<"\nParams:\n";
-	std::cout<<"dust_tau_v="<<dust_tau_v<<std::endl;
-	std::cout<<"dust_mu="<<dust_mu<<std::endl;
-	std::cout<<"sfr_tau="<<sfr_tau<<std::endl;
-	std::cout<<"age="<<age<<std::endl;
-	std::cout<<"metall="<<metall<<std::endl;
-	std::cout<<"chisquare="<<chi_before<<std::endl;
+	std::cout<<"\nbest params:\n\n";
+	std::cout<<"dust_tau_v="<<best_dust_tau_v<<std::endl;
+	std::cout<<"dust_mu="<<best_dust_mu<<std::endl;
+	std::cout<<"sfr_tau="<<best_sfr_tau<<std::endl;
+	std::cout<<"age="<<best_age<<std::endl;
+	std::cout<<"metall="<<best_metall<<std::endl;
+	std::cout<<"chisquare="<<best_chi<<std::endl;
 
 
 	std::cout<<"\nready\n";
