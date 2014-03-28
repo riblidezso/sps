@@ -10,7 +10,7 @@ class read{
 
 public: //functions
 
-	//reads in all models 
+	//reads in all models
 	int read_model_bin_all_cont();
 
 	//reads in all models 
