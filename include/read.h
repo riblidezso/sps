@@ -30,6 +30,10 @@ public: //functions
 	//from ascii file
 	int usr_read_sample();
 
+	//reads measured sdss spec
+	//from csv file
+	int usr_read_sdss_csv();
+
 public: //data
 
 	//stores the ages where model data is available
@@ -46,6 +50,12 @@ public: //data
 	//sample spectrum container
 	std::vector<double> sample_spec;
 
+	//sdss_spec containers
+	std::vector<double> mes_spec_wavel;
+	std::vector<double> mes_spec;
+	std::vector<double> mes_spec_err_l;
+	std::vector<double> mes_spec_err_h;
+	std::vector<double> mes_spec_mask;
 };
 
 #endif
