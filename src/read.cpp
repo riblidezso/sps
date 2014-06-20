@@ -258,3 +258,77 @@ int read::usr_read_sample()
 	std::cout<<"spectrum read\n";
 	return 0;
 }
+
+int read::usr_read_sdss_csv()
+{
+	bool tryagain;	
+	std::cout<<"\nGetting sdss csv spectrum to fit"<<std::endl;
+	
+	do{
+		tryagain=false;
+		try
+		{
+			// get filename
+			std::cout<<"input filename: ";
+			std::string temp_line,templ2;
+			getline(std::cin,temp_line);
+			std::stringstream temp_sstr;
+			temp_sstr<<temp_line;
+		
+			std::string infilename;
+			temp_sstr>>infilename;
+		
+			std::ifstream infile(infilename.c_str());
+		
+			// check filename
+			if(!(infile))										
+			{
+				std::cout<<"\nERROR CAN'T OPEN FILE: "<<infilename<<"\n"<<std::endl;
+				throw 1;
+			}
+			
+			// read spectrum
+			std::cout<<"reading file: "<<infilename<<std::endl;
+			int row=0;
+			double temp=0;
+			double temp2=0;
+			while(getline(infile,temp_line))
+			{
+				//gagyi
+				for(int j=0;j<temp_line.size();j++)
+				{
+					if (temp_line[j]==',')
+					{
+						temp_line[j]=' ';
+					}
+				}
+
+				std::stringstream temp_sstr;
+				temp_sstr<<temp_line;
+
+				if (temp_line[0] != '#' )
+				{
+					temp_sstr>>temp;
+					mes_spec_wavel.push_back(temp);
+					temp_sstr>>temp;
+					mes_spec.push_back(temp);
+					temp_sstr>>temp;
+					mes_spec_err_l.push_back(temp);
+					temp_sstr>>temp;
+					mes_spec_err_h.push_back(temp);
+					temp_sstr>>temp;
+					mes_spec_mask.push_back(temp);
+				}
+				row++;
+			}
+			infile.close();
+
+		}catch (int ex)
+		{
+			if (ex==1){tryagain=true;}
+		}
+	}while(tryagain);
+
+	std::cout<<"spectrum read\n";
+	return 0;
+}
