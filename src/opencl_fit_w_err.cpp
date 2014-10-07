@@ -2,6 +2,11 @@
 #include "read.h"
 #include "write.h"
 
+#include <float.h>
+#include <string.h>
+
+
+
 
 opencl_fit_w_err::opencl_fit_w_err(read& model)
 {
@@ -144,7 +149,7 @@ int opencl_fit_w_err::opencl_start(std::string kernel_filename)
 		}
 
 		/*choosing platform*/
-/*		std::cout<<"\nChoose platform: (type the number)"<<std::endl;
+		std::cout<<"\nChoose platform: (type the number)"<<std::endl;
 		int platform_choice;
 		std::string temp_line;
 		getline(std::cin,temp_line);
@@ -152,8 +157,8 @@ int opencl_fit_w_err::opencl_start(std::string kernel_filename)
 		temp_sstr<<temp_line;
 		temp_sstr>>platform_choice;
 		platform = platforms[platform_choice];
-*/
-		platform=platforms[1];
+
+//		platform=platforms[1];
 		delete[] platforms;		
 	}
 
@@ -204,7 +209,7 @@ int opencl_fit_w_err::opencl_start(std::string kernel_filename)
 	}
 
 	/*choosing device*/
-/*	std::cout<<"\nChoose device: (type the number)"<<std::endl;
+	std::cout<<"\nChoose device: (type the number)"<<std::endl;
 	int device_choice;
 	std::string temp_line1;
 	getline(std::cin,temp_line1);
@@ -212,8 +217,8 @@ int opencl_fit_w_err::opencl_start(std::string kernel_filename)
 	temp_sstr1<<temp_line1;
 	temp_sstr1>>device_choice;
 	device = devices[device_choice];
-*/
-	device=devices[0];
+
+//	device=devices[0];
 
 	//starting clock
 	t1 = clock();

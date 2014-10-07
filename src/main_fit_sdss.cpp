@@ -42,7 +42,7 @@ int main()
 	std::cout<<"no. of iterations:\n";
 
 	// fitting 
-	for(fitter.iter= 0; fitter.iter<(1000*50);fitter.iter++)
+	for(fitter.iter= 0; fitter.iter<(1000*10);fitter.iter++)
 	{
 		error=fitter.change_params(0.3);
 		if(error!=0)

@@ -1,4 +1,4 @@
-//#pragma OPENCL EXTENSION cl_khr_fp64 : enable
+#pragma OPENCL EXTENSION cl_khr_fp64 : enable
 __kernel void spec_gen ( 
 					__global double* model_without_dust,
 					__global double* time, 

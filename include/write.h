@@ -1,4 +1,5 @@
 #include <vector>
+#include <string>
 
 #ifndef WRTIE_H
 #define WRTIE_H
