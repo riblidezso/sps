@@ -3,7 +3,7 @@ CXX = g++
 LINK = $(CXX)
 
 # Flags
-CXXFLAGS = -I$(IDIR) -I../NVIDIA_GPU_COMPUTING_SDK/OpenCL/common/inc
+CXXFLAGS = -std=c++11 -I$(IDIR) -I../NVIDIA_GPU_COMPUTING_SDK/OpenCL/common/inc
 
 # Paths
 BIN = bin
@@ -41,12 +41,20 @@ $(ODIR)/read.o : $(SRC)/read.cpp $(IDIR)/read.h
 
 
 #Building fitter
-$(BIN)/fit_dp : $(ODIR)/main_sps_fit_dp.o $(ODIR)/read.o 
+$(BIN)/fit_sdss : $(ODIR)/main_fit_sdss.o $(ODIR)/opencl_fit_w_err.o $(ODIR)/read.o  $(ODIR)/write.o
 	$(LINK) -o $@ $^ -lOpenCL
 
-$(ODIR)/main_sps_fit_dp.o : $(SRC)/main_sps_fit_dp.cpp
+$(ODIR)/main_fit_sdss.o : $(SRC)/main_fit_sdss.cpp
 	$(CXX) -c -o  $@ $< $(CXXFLAGS) -lOpenCL
 
+$(ODIR)/opencl_fit_w_err.o : $(SRC)/opencl_fit_w_err.cpp $(IDIR)/opencl_fit_w_err.h
+	$(CXX) -c -o  $@ $< $(CXXFLAGS) -lOpenCL
+
+$(ODIR)/read.o : $(SRC)/read.cpp $(IDIR)/read.h 
+	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
+
+$(ODIR)/write.o : $(SRC)/write.cpp $(IDIR)/write.h 
+	$(CXX) -c -o  $@ $< $(CXXFLAGS)
 
 .PHONY: clean
 
