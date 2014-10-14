@@ -381,7 +381,7 @@ int opencl_fit_w_err::change_params(double opt_acc)
 		if (acc_ratio[acc_ratio.size()-1]<opt_acc)
 		sigma=sigma-sigma*(opt_acc-acc_ratio[acc_ratio.size()-1]);
 
-		std::cout<<"\n acc_rate="<<acc_ratio[acc_ratio.size()-1]<<"\n";
+		//std::cout<<"\n acc_rate="<<acc_ratio[acc_ratio.size()-1]<<"\n";
 	}
 	
 	if(sigma<0)
@@ -591,6 +591,7 @@ int opencl_fit_w_err::record_data()
 		out_acc_chi_evol.push_back(0);
 		acc.push_back(0);
 	}
+	//!!!!!!!!!!!!5000 hardcoded
 	if(iter>5000)
 	{
 		points.push_back(temp_point); //!!!!!!!!!!!!!!
@@ -612,7 +613,7 @@ int opencl_fit_w_err::record_data()
 		}
 	}
 
-	if(accepted==2 || accepted==3) //worse step
+/*	if(accepted==2 || accepted==3) //worse step
 	{
 		worse.push_back(1);
 	}
@@ -629,12 +630,19 @@ int opencl_fit_w_err::record_data()
 	{
 		worse_acc.push_back(0);
 	}
+*/
+
 
 	//counting average values
+
+	//now not counting for time
+	worse_acc_ratio.push_back(1);
+	worse_rate.push_back(1);
+//	acc_ratio.push_back(1);
 	if(iter%200==0)
 	{
 		double mean=0;
-		if (worse_acc.size()>100)
+/*		if (worse_acc.size()>100)
 		{
 			for(int i=0;i<100;i++)
 			{
@@ -654,6 +662,7 @@ int opencl_fit_w_err::record_data()
 		}
 	
 		mean=0;
+*/
 		if (acc.size()>100)
 		{
 			for(int i=0;i<100;i++)
