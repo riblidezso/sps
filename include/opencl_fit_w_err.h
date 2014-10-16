@@ -26,11 +26,13 @@ public: //functions
 	int set_kern_arg();
 	int call_kernels();
 
-	int set_initial_params(double s_dust_tau_v,
-							double s_dust_mu,
-							double s_sfr_tau,
-							double s_age,
-							double s_metall);
+	int set_initial_params(	double s_dust_tau_v,
+				double s_dust_mu,
+				double s_sfr_tau,
+				double s_age,
+				double s_metall,
+				double s_vdisp);
+
 	int change_params(double opt_acc);
 
 	int evaluate_chi(double temp);
@@ -53,20 +55,21 @@ public: //data
 	cl_command_queue commandQueue;
 
 	cl_kernel kernel;
+	cl_kernel kernel_vel;
 	cl_kernel kernel2;
 	
 	//data
 	cl_mem model_without_dust_d, time_d,wavel_d,res_model_d;
 	cl_mem mes_spec_d,mes_spec_err_d,mes_spec_mask_d;
 	//buffers to write
-	cl_mem model_d,result_d,factor1_d,factor2_d,chi_d;	
+	cl_mem model_d,result_no_vel_d,result_d,factor1_d,factor2_d,chi_d;	
 
 /*fit data */
 	std::string imf;
 
-	double dust_tau_v,dust_mu,sfr_tau, age, metall;
-	double d_dust_tau_v, d_dust_mu, d_sfr_tau, d_age, d_metall;
-	double best_dust_tau_v, best_dust_mu, best_sfr_tau, best_age, best_metall;
+	double dust_tau_v,dust_mu,sfr_tau, age, metall, vdisp;
+	double d_dust_tau_v, d_dust_mu, d_sfr_tau, d_age, d_metall, d_vdisp;
+	double best_dust_tau_v, best_dust_mu, best_sfr_tau, best_age, best_metall, best_vdisp;
 
 	double chi_before, best_chi;
 
