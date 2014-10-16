@@ -149,7 +149,7 @@ p [] [0:0.25] "../points.dat" u (bin(($1*$2),binwidth)):(1.0/tau_records) smooth
 unset multiplot
 unset output 
 
-
+reset
 
 set terminal pngcairo enhanced color dashed font 'Arial,12' lw 2 size 32cm,18cm 
 set output 'vdisp_hist.png'
@@ -167,7 +167,6 @@ set ytics in mirror
 
 set ylabel "P"
 
-
 set xlabel "vdisp [km/s]"
 
 binwidth=300000*(vdisp_max-vdisp_min)/(nbins)
@@ -176,6 +175,8 @@ p [] [0:0.25] "../points.dat" u (bin(($6*300000),binwidth)+binwidth*0.5):(1.0/vd
 #title "vdisp distribution"
 
 unset output
+
 }
+
 
 
