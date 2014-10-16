@@ -175,7 +175,7 @@ binwidth=300000*(vdisp_max-vdisp_min)/(nbins)
 p [] [0:0.25] "../points.dat" u (bin(($6*300000),binwidth)+binwidth*0.5):(1.0/vdisp_records) smooth freq with boxes notitle 
 #title "vdisp distribution"
 
-
+unset output
 }
 
 
