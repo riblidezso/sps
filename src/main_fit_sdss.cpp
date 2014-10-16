@@ -27,11 +27,11 @@ int main()
 	model.usr_read_sdss_csv();
 
 	opencl_fit_w_err fitter(model);
-	//resampling model
-	fitter.resample_mes(model);
+	//resampling models
+	fitter.resample_models_2_mes(model);
 
 	//basic stuff
-	error=fitter.opencl_start("fit_w_err.cl");
+	error=fitter.opencl_initialize("fit_w_err.cl");
 	//kernel and memory
 	error=fitter.opencl_kern_mem();
 	//setting the device memories of kernels

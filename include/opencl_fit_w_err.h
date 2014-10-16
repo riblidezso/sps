@@ -18,10 +18,10 @@ public:
 	opencl_fit_w_err(read& model);
 
 public: //functions
-	int resample_mes(read& model);
+	int resample_models_2_mes(read& model);
 
 	int convertToString(const char *filename, std::string& s);
-	int opencl_start(std::string kernel_filename);
+	int opencl_initialize(std::string kernel_filename);
 	int opencl_kern_mem();
 	int set_kern_arg();
 	int call_kernels();
@@ -54,12 +54,12 @@ public: //data
 	cl_program program;
 	cl_command_queue commandQueue;
 
-	cl_kernel kernel;
-	cl_kernel kernel_vel;
-	cl_kernel kernel2;
+	cl_kernel kernel_spec_gen;
+	cl_kernel kernel_vel_disp;
+	cl_kernel kernel_chi_calc;
 	
 	//data
-	cl_mem model_without_dust_d, time_d,wavel_d,res_model_d;
+	cl_mem model_without_dust_d, time_d,wavel_d,resampled_model_d;
 	cl_mem mes_spec_d,mes_spec_err_d,mes_spec_mask_d;
 	//buffers to write
 	cl_mem model_d,result_no_vel_d,result_d,factor1_d,factor2_d,chi_d;	
@@ -123,7 +123,7 @@ public: //data
 
 	double sigma;
 
-	std::vector<double> res_model;
+	std::vector<double> resampled_model;
 	int mes_nspecsteps;
 };
 

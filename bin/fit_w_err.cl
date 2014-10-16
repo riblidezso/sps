@@ -1,6 +1,6 @@
 #pragma OPENCL EXTENSION cl_khr_fp64 : enable
 
-__kernel void fit_w_err_1 ( 
+__kernel void spec_gen ( 
 					__global double* res_model,
 					__global double* time, 
 					__global double* wavelengths,
@@ -143,7 +143,7 @@ __kernel void mask_veloc_disp (
 	return;
 }
 
-__kernel void fit_w_err_2 ( 
+__kernel void chi_calculation ( 
 					__global double* mes_spec,
 					__global double* mes_spec_err,
 					__global double* mes_spec_mask,
