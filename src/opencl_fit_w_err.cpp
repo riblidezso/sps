@@ -26,12 +26,12 @@ opencl_fit_w_err::opencl_fit_w_err(read& model)
 
 	result.resize(mes_nspecsteps);
 
-	temp_point.resize(5);
+	temp_point.resize(6);
 
 	chi_before=DBL_MAX;
 	best_chi=DBL_MAX;
 
-	imf="chabrier";//!!!!!!!!!!!!!!!!!
+	imf="chabrier";
 
 	sigma=0.008;
 
@@ -108,7 +108,7 @@ int opencl_fit_w_err::convertToString(const char *filename, std::string& s)
 		delete[] str;
 		return 0;
 	}
-	std::cout<<"Error: failed to open file\n:"<<filename<<std::endl;
+	std::cout<<"Error: failed to open kernel file\n:"<<filename<<std::endl;
 	return 1;
 }
 
@@ -226,16 +226,12 @@ int opencl_fit_w_err::opencl_start(std::string kernel_filename)
 	/*Step 3: Create context.*/
 	context = clCreateContext(NULL,1, devices,NULL,NULL,&status);
 	if (status!=0)
-	{
 		std::cout<<"ERROR creating context: "<<status<<std::endl;
-	}
 	 
 	/*Step 4: Creating command queue associate with the context.*/
 	commandQueue = clCreateCommandQueue(context, device, 0, &status);
 	if (status!=0)
-	{
 		std::cout<<"ERROR creating commandqueue: "<<status<<std::endl;
-	}
 
 	/*Step 5: Create program object */
 	const char *filename = kernel_filename.c_str();
@@ -245,9 +241,7 @@ int opencl_fit_w_err::opencl_start(std::string kernel_filename)
 	size_t sourceSize[] = {strlen(source)};
 	program = clCreateProgramWithSource(context, 1, &source, sourceSize, &status);
 	if (status!=0)
-	{
 		std::cout<<"ERROR creating program: "<<status<<std::endl;
-	}	
 
 	/*Step 6: Build program. */
 	status=clBuildProgram(program, 1,devices,NULL,NULL,NULL);
@@ -288,27 +282,26 @@ int opencl_fit_w_err::opencl_kern_mem()
 
 	//buffers to write
 	model_d = clCreateBuffer(context, CL_MEM_READ_WRITE,	sizeof(double) * ntimesteps * mes_nspecsteps , NULL, &status);
+	result_no_vel_d = clCreateBuffer(context, CL_MEM_READ_WRITE,	sizeof(double) * mes_nspecsteps , NULL, &status);
 	result_d = clCreateBuffer(context, CL_MEM_READ_WRITE,	sizeof(double) * mes_nspecsteps , NULL, &status);
 	factor1_d = clCreateBuffer(context, CL_MEM_WRITE_ONLY,	sizeof(double) * mes_nspecsteps , NULL, &status);
 	factor2_d = clCreateBuffer(context, CL_MEM_WRITE_ONLY,	sizeof(double) * mes_nspecsteps , NULL, &status);
 	chi_d = clCreateBuffer(context,  CL_MEM_WRITE_ONLY,		sizeof(double) * mes_nspecsteps , NULL, &status);		
 	if (status!=0)
-	{
 		std::cout<<"ERROR creating buffers: "<<status<<std::endl;
-	}
 
 	/*Step 8: Create kernel objects */
 	kernel = clCreateKernel(program,"fit_w_err_1", &status);
 	if (status!=0)
-	{
 		std::cout<<"ERROR creating kernel: "<<status<<std::endl;
-	}
+
 	kernel2 = clCreateKernel(program,"fit_w_err_2", &status);
 	if (status!=0)
-	{
 		std::cout<<"ERROR creating kernel2: "<<status<<std::endl;
-	}
 
+	kernel_vel = clCreateKernel(program,"mask_veloc_disp", &status);
+	if (status!=0)
+		std::cout<<"ERROR creating kernel_vel: "<<status<<std::endl;
 	return status;
 }
 
@@ -327,12 +320,26 @@ int opencl_fit_w_err::set_kern_arg()
 	status |= clSetKernelArg(kernel, 5, sizeof(cl_mem), &mes_spec_mask_d);
 		
 	status |= clSetKernelArg(kernel, 6, sizeof(cl_mem), &model_d);
-	status |= clSetKernelArg(kernel, 7, sizeof(cl_mem), &result_d);
+	status |= clSetKernelArg(kernel, 7, sizeof(cl_mem), &result_no_vel_d);
 	status |= clSetKernelArg(kernel, 8, sizeof(cl_mem), &factor1_d);
 	status |= clSetKernelArg(kernel, 9, sizeof(cl_mem), &factor2_d);
 	
 	status |= clSetKernelArg(kernel, 10, sizeof(int), &mes_nspecsteps);
 	status |= clSetKernelArg(kernel, 11, sizeof(int), &ntimesteps);
+
+	//kernel_vel
+	status = clSetKernelArg(kernel_vel, 0, sizeof(cl_mem), &wavel_d);
+
+	status |= clSetKernelArg(kernel_vel, 1, sizeof(cl_mem), &mes_spec_d);
+	status |= clSetKernelArg(kernel_vel, 2, sizeof(cl_mem), &mes_spec_err_d);
+	status |= clSetKernelArg(kernel_vel, 3, sizeof(cl_mem), &mes_spec_mask_d);
+		
+	status |= clSetKernelArg(kernel_vel, 4, sizeof(cl_mem), &result_no_vel_d);
+	status |= clSetKernelArg(kernel_vel, 5, sizeof(cl_mem), &result_d);
+	status |= clSetKernelArg(kernel_vel, 6, sizeof(cl_mem), &factor1_d);
+	status |= clSetKernelArg(kernel_vel, 7, sizeof(cl_mem), &factor2_d);
+	
+	status |= clSetKernelArg(kernel_vel, 8, sizeof(int), &mes_nspecsteps);
 
 	//kernel2 
 	status |= clSetKernelArg(kernel2, 0, sizeof(cl_mem), &mes_spec_d);
@@ -351,17 +358,18 @@ int opencl_fit_w_err::set_kern_arg()
 }
 
 int opencl_fit_w_err::set_initial_params(double s_dust_tau_v,
-									double s_dust_mu,
-									double s_sfr_tau,
-									double s_age,
-									double s_metall)
+					double s_dust_mu,
+					double s_sfr_tau,
+					double s_age,
+					double s_metall,
+					double s_vdisp)
 {
-
 	dust_tau_v=s_dust_tau_v;
 	dust_mu=s_dust_mu;
 	sfr_tau=s_sfr_tau;
 	age=s_age;
 	metall=s_metall;
+	vdisp=s_vdisp;
 
 	return 0;
 }
@@ -373,25 +381,28 @@ int opencl_fit_w_err::change_params(double opt_acc)
 	int status=0;
 	int sign;
 
+	//control the step size
 	if(acc_ratio.size()>1 && iter%200==1 && iter>3 )
 	{
 		if (acc_ratio[acc_ratio.size()-1]>opt_acc && sigma < 0.5)
 			sigma=sigma+sigma*(acc_ratio[acc_ratio.size()-1]-opt_acc);
 		
 		if (acc_ratio[acc_ratio.size()-1]<opt_acc)
-		sigma=sigma-sigma*(opt_acc-acc_ratio[acc_ratio.size()-1]);
+			sigma=sigma-sigma*(opt_acc-acc_ratio[acc_ratio.size()-1]);
 
 		//std::cout<<"\n acc_rate="<<acc_ratio[acc_ratio.size()-1]<<"\n";
 	}
-	
+
+	//this should not happen	
 	if(sigma<0)
 	{
 		std::cout<<"ERROR sigma < 0";
 		return 1;
 	}
 
-	std::normal_distribution<double> distribution(0,sigma);
 
+	//create jump
+	std::normal_distribution<double> distribution(0,sigma);
 	do{
 		status=0;
 
@@ -401,18 +412,23 @@ int opencl_fit_w_err::change_params(double opt_acc)
 		d_sfr_tau= sfr_tau *  distribution(generator) ;
 		d_age= age *  distribution(generator) ;
 		d_metall= metall * distribution(generator) ;
+		d_vdisp= vdisp * distribution(generator) ;
 		
 
-		/*Step 9: Set Kernel arguments.*/
 		dust_tau_v+=d_dust_tau_v;
 		dust_mu+=d_dust_mu;
 		sfr_tau+=d_sfr_tau;
 		age+=d_age;
 		metall+=d_metall;
+		vdisp+=d_vdisp;
 
-		if(dust_mu <=0 || dust_mu >1 || dust_tau_v <0 || dust_tau_v>1.5
-			|| age<1e+8 || age>2e+10 ||sfr_tau>40e+19
-			|| sfr_tau<=1e+7 || metall<0.0001 || metall>0.05)
+		//check boundaries
+		if(	dust_mu <=0 || dust_mu >1 || 
+			dust_tau_v <0 || dust_tau_v>1.5 ||
+			age<1e+8 || age>2e+10 ||
+			sfr_tau>40e+19	|| sfr_tau<=1e+7 || 
+			metall<0.0001 || metall>0.05 || 
+			vdisp > 0.002)
 			
 		{
 			dust_tau_v-=d_dust_tau_v;
@@ -420,16 +436,19 @@ int opencl_fit_w_err::change_params(double opt_acc)
 			sfr_tau-=d_sfr_tau;
 			age-=d_age;
 			metall-=d_metall;
+			vdisp-=d_vdisp;
 
 			status=1;
 		}
-		
 	}while(status==1);
 
+	//this part finds the metallicity models
+	//nearest to metall, these will be use
+	//at the interpolation step
 	int offset;
 	if( imf == "chabrier")
 		offset=0;
-	else if(imf=="salpeter")
+	else if(imf == "salpeter")
 		offset=6;
 	
 	double model_metal[6]={0.0001,0.0004,0.004,0.008,0.02,0.05};
@@ -459,6 +478,12 @@ int opencl_fit_w_err::change_params(double opt_acc)
 		return status;
 	}
 
+	status = clSetKernelArg(kernel_vel, 9, sizeof(double), &vdisp);
+	if (status!=0)
+	{
+		std::cout<<"ERROR setting kernel_vel arguments: "<<status<<std::endl;
+		return status;
+	}	
 	return status;
 }
 
@@ -467,14 +492,13 @@ int opencl_fit_w_err::call_kernels()
 	cl_int status=0;
 	double temp_1,temp_2,factor;
 
-//	cl_event kernel_event[1];
-	/*Step 10: Running the kernel.*/
+	//Step 10: Running the kernel.
 	size_t global_work_size[1] = {mes_nspecsteps};
 	status = clEnqueueNDRangeKernel(commandQueue, kernel, 1, NULL, global_work_size, NULL, 0, NULL,NULL);
 	if (status!=0)
 		std::cout<<"ERROR running kernel: "<<status<<std::endl;
-
-	/*Step 11: Read the result back to host memory.*/
+/*
+	//Step 11: Read the result back to host memory.
 	status = clEnqueueReadBuffer(commandQueue, factor1_d, CL_TRUE, 0, mes_nspecsteps * sizeof(double) , factor1.data(), 0, NULL,NULL);
 	status = clEnqueueReadBuffer(commandQueue, factor2_d, CL_TRUE, 0, mes_nspecsteps * sizeof(double) , factor2.data(), 0, NULL, NULL);
 	if (status!=0)
@@ -482,6 +506,24 @@ int opencl_fit_w_err::call_kernels()
 		std::cout<<"ERROR reading buffer: "<<status<<std::endl;
 		return 1;
 	}
+*/
+
+//next kernel for velocity dispersion
+	//Step 10: Running the kernel.
+	//size_t global_work_size[1] = {mes_nspecsteps};
+	status = clEnqueueNDRangeKernel(commandQueue, kernel_vel, 1, NULL, global_work_size, NULL, 0, NULL,NULL);
+	if (status!=0)
+		std::cout<<"ERROR running kernel_vel: "<<status<<std::endl;
+
+	//Step 11: Read the result back to host memory.
+	status = clEnqueueReadBuffer(commandQueue, factor1_d, CL_TRUE, 0, mes_nspecsteps * sizeof(double) , factor1.data(), 0, NULL,NULL);
+	status = clEnqueueReadBuffer(commandQueue, factor2_d, CL_TRUE, 0, mes_nspecsteps * sizeof(double) , factor2.data(), 0, NULL, NULL);
+	if (status!=0)
+	{
+		std::cout<<"ERROR reading buffer,from kernel_vel: "<<status<<std::endl;
+		return 1;
+	}
+
 
 	//summing factors
 	temp_1=0;
@@ -496,7 +538,7 @@ int opencl_fit_w_err::call_kernels()
 
 	//next kernel for chi
 
-	/* Set kernel2 argument.*/
+	// Set kernel2 argument.
 	status |= clSetKernelArg(kernel2, 5, sizeof(double), &factor);
 	if (status!=0)
 	{
@@ -504,7 +546,7 @@ int opencl_fit_w_err::call_kernels()
 		return 1;
 	}
 
-	/*Step 10: Running the kernel.*/
+	//Step 10: Running the kernel.
 	//	size_t global_work_size[1] = {nspecsteps};
 	status = clEnqueueNDRangeKernel(commandQueue, kernel2, 1, NULL, global_work_size, NULL, 0, NULL, NULL); 
 	if (status!=0)
@@ -513,7 +555,7 @@ int opencl_fit_w_err::call_kernels()
 		return 1;
 	}	
 
-	/*Step 11: Read the result back to host memory.*/
+	//Step 11: Read the result back to host memory.
 	status = clEnqueueReadBuffer(commandQueue, chi_d, CL_TRUE, 0, mes_nspecsteps * sizeof(double) , chis.data(), 0,NULL,NULL);
 	if (status!=0)
 	{
@@ -529,34 +571,22 @@ int opencl_fit_w_err::evaluate_chi(double temp)
 	//summing chisquare
 	chi=0;
 	for(int i=0;i<mes_nspecsteps;i++)
-	{
 		chi+=chis[i];
-	}
 
 	//evaluating chi
 	if (best_chi > chi)
-	{
 		accepted=0;
-	}
 	else if (chi_before>chi)
-	{
 		accepted=1;
-	}
 	else //if chi is no better than the one before
 	{
 		double limit=exp((chi_before-chi)/temp) * RAND_MAX;
 		double rand_num=rand();
 
 		if(rand_num > limit )
-		{
-			//rejection
-			accepted=3;
-		}
+			accepted=3;	//rejection
 		else
-		{
-			//acceptance
-			accepted=2;
-		}
+			accepted=2;	//acceptance
 	}
 	return 0;
 }
@@ -579,6 +609,7 @@ int opencl_fit_w_err::record_data()
 		temp_point[2]=sfr_tau;
 		temp_point[3]=age;
 		temp_point[4]=metall;
+		temp_point[5]=vdisp;
 		
 	}
 	else //not accepted
@@ -588,14 +619,13 @@ int opencl_fit_w_err::record_data()
 		sfr_tau-=d_sfr_tau;
 		age-=d_age;
 		metall-=d_metall;
+		vdisp-=d_vdisp;
 		out_acc_chi_evol.push_back(0);
 		acc.push_back(0);
 	}
-	//!!!!!!!!!!!!5000 hardcoded
+	//burn in 5000 hardcoded
 	if(iter>5000)
-	{
 		points.push_back(temp_point); //!!!!!!!!!!!!!!
-	}
 
 	if (accepted==0) //the best chi 
 	{
@@ -605,31 +635,22 @@ int opencl_fit_w_err::record_data()
 		best_sfr_tau=sfr_tau;
 		best_age=age;
 		best_metall=metall;
+		best_vdisp=vdisp;
 					
 		status = clEnqueueReadBuffer(commandQueue, result_d, CL_TRUE, 0, mes_nspecsteps * sizeof(double) , result.data(), 0, NULL, NULL);
 		if (status!=0)
-		{
 			std::cout<<"ERROR reading buffer: "<<status<<std::endl;
-		}
 	}
 
 /*	if(accepted==2 || accepted==3) //worse step
-	{
 		worse.push_back(1);
-	}
 	else //better step
-	{
 		worse.push_back(0);
-	}
 
 	if(accepted==2) //worse but accepted
-	{
 		worse_acc.push_back(1);
-	}
 	if(accepted==3) //worse and not accepted
-	{
 		worse_acc.push_back(0);
-	}
 */
 
 
@@ -645,9 +666,8 @@ int opencl_fit_w_err::record_data()
 /*		if (worse_acc.size()>100)
 		{
 			for(int i=0;i<100;i++)
-			{
 				mean+=worse_acc[worse_acc.size()-100+i];
-			}
+
 			worse_acc_ratio.push_back(mean/100);
 		}
 
@@ -655,9 +675,8 @@ int opencl_fit_w_err::record_data()
 		if (worse.size()>100)
 		{
 			for(int i=0;i<100;i++)
-			{
 				mean+=worse[worse.size()-100+i];
-			}
+
 			worse_rate.push_back(mean/100);
 		}
 	
@@ -666,9 +685,7 @@ int opencl_fit_w_err::record_data()
 		if (acc.size()>100)
 		{
 			for(int i=0;i<100;i++)
-			{
 				mean+=acc[acc.size()-100+i];
-			}
 				
 			acc_ratio.push_back(mean/100);
 		}
@@ -702,6 +719,7 @@ int opencl_fit_w_err::write_results()
 	std::cout<<"sfr_tau="<<best_sfr_tau<<std::endl;
 	std::cout<<"age="<<best_age<<std::endl;
 	std::cout<<"metall="<<best_metall<<std::endl;
+	std::cout<<"veloc_disp="<<best_vdisp<<std::endl;
 	std::cout<<"chisquare="<<best_chi<<std::endl;
 
 	std::ofstream outfile("../output/fitted-params.dat");
@@ -718,6 +736,7 @@ int opencl_fit_w_err::write_results()
 	outfile<<"sfr_tau="<<best_sfr_tau<<std::endl;
 	outfile<<"age="<<best_age<<std::endl;
 	outfile<<"metall="<<best_metall<<std::endl;
+	outfile<<"veloc_disp="<<best_vdisp<<std::endl;
 	outfile<<"log(P)="<<best_chi<<std::endl;
 	
 	outfile.close();
@@ -731,9 +750,10 @@ int opencl_fit_w_err::clean_resources()
 {
 	int status=0;
 
-	/*Step 12: Clean the resources.*/
+	//Step 12: Clean the resources.
 	status = clReleaseKernel(kernel);				//Release kernels.
 	status = clReleaseKernel(kernel2);	
+	status = clReleaseKernel(kernel_vel);	
 
 	status = clReleaseProgram(program);				//Release the program object.
 
@@ -746,6 +766,7 @@ int opencl_fit_w_err::clean_resources()
 	status = clReleaseMemObject(mes_spec_mask_d);
 	
 	status = clReleaseMemObject(result_d);
+	status = clReleaseMemObject(result_no_vel_d);
 	status = clReleaseMemObject(model_d);	
 	status = clReleaseMemObject(factor1_d);
 	status = clReleaseMemObject(factor2_d);

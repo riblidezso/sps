@@ -269,10 +269,11 @@ int read::usr_read_sdss_csv()
 		try
 		{
 			// get filename
-			std::cout<<"input filename: ";
+			std::cout<<"input filename: (current directory is \"sps/input/\")\n";
 			std::string temp_line,templ2;
 			getline(std::cin,temp_line);
 			std::stringstream temp_sstr;
+			temp_sstr<<"../input/";
 			temp_sstr<<temp_line;
 		
 			std::string infilename;
