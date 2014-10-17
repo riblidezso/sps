@@ -38,6 +38,9 @@ opencl_fit_w_err::opencl_fit_w_err(read& model)
 	chi_before=DBL_MAX;
 	best_chi=DBL_MAX;
 
+	//burnin indicator
+	burnin_ended==false;
+
 	//imf, if you want to use salpeter
 	//uncomment that line and comment chabrier
 	imf="chabrier";
@@ -47,6 +50,17 @@ opencl_fit_w_err::opencl_fit_w_err(read& model)
 	// of steps is the markov chain
 	// the step is relative so it is 0.8% now
 	sigma=0.008;
+
+
+	//parameter fixing is not yet fully supported
+	// you shuld just change the values here
+	//
+	fix_dust_tau_v=false;
+	fix_dust_mu=false;
+	fix_sfr_tau=false;
+	fix_age=false;
+	fix_metall=false;
+	fix_vdisp=false;
 
 }
 
@@ -467,12 +481,15 @@ int opencl_fit_w_err::set_initial_params(double s_dust_tau_v,
 //change parameters
 //this will be called at every iteration
 //in the markov chain
+//
+//opt acc is the optimal acceptace ratio
 int opencl_fit_w_err::change_params(double opt_acc)
 {
 	//error variable
 	int status=0;
 
 	//control the step size
+	//better control mechanism should be used
 	if(acc_ratio.size()>1 && iter%200==1 && iter>3 )
 	{
 		if (acc_ratio[acc_ratio.size()-1]>opt_acc && sigma < 0.5)
@@ -493,24 +510,47 @@ int opencl_fit_w_err::change_params(double opt_acc)
 
 
 	//create jump
+
+	//intialize normal distribution random generator
 	std::normal_distribution<double> distribution(0,sigma);
 	do{
 		status=0;
 
-		//creating random jump
-		d_dust_tau_v= dust_tau_v * distribution(generator);
-		d_dust_mu= dust_mu * distribution(generator) ;
-		d_sfr_tau= sfr_tau *  distribution(generator) ;
-		d_age= age *  distribution(generator) ;
-		d_metall= metall * distribution(generator) ;
-		d_vdisp= vdisp * distribution(generator) ;
-		
-
+		//creating normal distribution random jump
+		if (fix_dust_tau_v==false)
+			d_dust_tau_v= dust_tau_v * distribution(generator);
+		else
+			d_dust_tau_v=0;
 		dust_tau_v+=d_dust_tau_v;
+
+		if (fix_dust_mu==false)
+			d_dust_mu= dust_mu * distribution(generator) ;
+		else
+			d_dust_mu=0;
 		dust_mu+=d_dust_mu;
+
+		if (fix_sfr_tau==false)
+			d_sfr_tau= sfr_tau *  distribution(generator) ;
+		else
+			d_sfr_tau=0;
 		sfr_tau+=d_sfr_tau;
+
+		if (fix_age==false)
+			d_age= age *  distribution(generator) ;
+		else
+			d_age=0;
 		age+=d_age;
+
+		if (fix_metall==false)
+			d_metall= metall * distribution(generator) ;
+		else
+			d_metall=0;
 		metall+=d_metall;
+
+		if (fix_vdisp==false)
+			d_vdisp= vdisp * distribution(generator) ;
+		else
+			d_vdisp=0;
 		vdisp+=d_vdisp;
 
 		//check boundaries
@@ -533,6 +573,7 @@ int opencl_fit_w_err::change_params(double opt_acc)
 		}
 	}while(status==1);
 
+
 	//this part finds the metallicity models
 	//nearest to metall, these will be use
 	//at the interpolation step
@@ -544,7 +585,6 @@ int opencl_fit_w_err::change_params(double opt_acc)
 	
 	double model_metal[6]={0.0001,0.0004,0.004,0.008,0.02,0.05};
 	int modelno;
-
 	//finding models to interpolate metall
 	for(int j=0;j<6;j++)
 	{
@@ -556,7 +596,8 @@ int opencl_fit_w_err::change_params(double opt_acc)
 	}
 
 	
-//already reached max no of constant arguments...
+//(ready reached max no of constant arguments...)
+//set  the kernel arguments that has changed
 	status = clSetKernelArg(kernel_spec_gen, 12, sizeof(double), &dust_tau_v);
 	status |= clSetKernelArg(kernel_spec_gen, 13, sizeof(double), &dust_mu);
 	status |= clSetKernelArg(kernel_spec_gen, 14, sizeof(double), &sfr_tau);
@@ -578,9 +619,16 @@ int opencl_fit_w_err::change_params(double opt_acc)
 	return status;
 }
 
+
+//this function launches the kernels and reads back result from host(GPU)
 int opencl_fit_w_err::call_kernels()
 {
+	//error variable
 	cl_int status=0;
+
+	//temp1, temp2 are sums of vectors factor1,factor2
+	//they are use to calculate the "factor" that pulls together observed
+	//and model spectra
 	double temp_1,temp_2,factor;
 
 	//generating spectrum (no velocity dispersion)
@@ -590,11 +638,15 @@ int opencl_fit_w_err::call_kernels()
 	if (status!=0)
 		std::cerr<<"ERROR running kernel_spec_gen: "<<status<<std::endl;
 
+
 	//next kernel for velocity dispersion
 	// Running the kernel
 	status = clEnqueueNDRangeKernel(commandQueue, kernel_vel_disp, 1, NULL, global_work_size, NULL, 0, NULL,NULL);
 	if (status!=0)
+	{
 		std::cerr<<"ERROR running kernel_vel_disp: "<<status<<std::endl;
+		return 1;
+	}
 
 	//Read the result back to host memory
 	status = clEnqueueReadBuffer(commandQueue, factor1_d, CL_TRUE, 0, mes_nspecsteps * sizeof(double) , factor1.data(), 0, NULL,NULL);
@@ -606,7 +658,7 @@ int opencl_fit_w_err::call_kernels()
 	}
 
 
-	//summing factors
+	//summing factors, to pull spectra together
 	temp_1=0;
 	temp_2=0;
 	for(int i=0;i<mes_nspecsteps;i++)
@@ -633,11 +685,13 @@ int opencl_fit_w_err::call_kernels()
 		return 1;
 	}	
 
-	//Step 11: Read the result back to host memory.
+	//Read the chis to host memory.
+	//now we dont read back the fittes spectrum
+	//only when it is the best so far
 	status = clEnqueueReadBuffer(commandQueue, chi_d, CL_TRUE, 0, mes_nspecsteps * sizeof(double) , chis.data(), 0,NULL,NULL);
 	if (status!=0)
 	{
-		std::cerr<<"ERROR reading buffer: "<<status<<std::endl;
+		std::cerr<<"ERROR reading chi buffer: "<<status<<std::endl;
 		return 1;
 	}
 	
@@ -656,7 +710,9 @@ int opencl_fit_w_err::evaluate_chi(double temp)
 		accepted=0;
 	else if (chi_before>chi)
 		accepted=1;
-	else //if chi is no better than the one before
+	//if chi is no better than the one before
+	//Metropolis Hastings rejection/acceptance step
+	else 
 	{
 		double limit=exp((chi_before-chi)/temp) * RAND_MAX;
 		double rand_num=rand();
@@ -669,12 +725,31 @@ int opencl_fit_w_err::evaluate_chi(double temp)
 	return 0;
 }
 
+
+//this function is called in everz iteration and records 
+//the parameter values in the step, and the accceptance rate
+//and other diagnostic data
 int opencl_fit_w_err::record_data()
 {
 	int status=0;
 	
 	out_chi_evol.push_back(chi);
 	out_best_chi_evol.push_back(best_chi);
+
+	//check if burnin has ended
+	if (burnin_ended==false )
+	{
+		int window=5000;
+		if ( iter > window )
+		{
+			if (chi > out_chi_evol[iter-window])
+			{
+				burnin_ended=true;
+				std::cout<<"\nBurnin section ended at: "<<iter<<"\n"<<std::endl;
+			}	
+		}
+	}
+	
 
 	if(accepted==0 || accepted==1 || accepted==2  ) //step was accepted
 	{
@@ -688,6 +763,16 @@ int opencl_fit_w_err::record_data()
 		temp_point[3]=age;
 		temp_point[4]=metall;
 		temp_point[5]=vdisp;
+
+		//record temp data to parameter chain
+		//now i do not record points arter
+		//rejected step
+		//that might would result in 
+		//a bit different histograms
+		//
+		//burn in 5000 hardcoded
+		if(burnin_ended)
+			points.push_back(temp_point); 
 		
 	}
 	else //not accepted
@@ -701,9 +786,6 @@ int opencl_fit_w_err::record_data()
 		out_acc_chi_evol.push_back(0);
 		acc.push_back(0);
 	}
-	//burn in 5000 hardcoded
-	if(iter>5000)
-		points.push_back(temp_point); //!!!!!!!!!!!!!!
 
 	if (accepted==0) //the best chi 
 	{
@@ -720,7 +802,7 @@ int opencl_fit_w_err::record_data()
 			std::cout<<"ERROR reading buffer: "<<status<<std::endl;
 	}
 
-/*	if(accepted==2 || accepted==3) //worse step
+	if(accepted==2 || accepted==3) //worse step
 		worse.push_back(1);
 	else //better step
 		worse.push_back(0);
@@ -729,19 +811,15 @@ int opencl_fit_w_err::record_data()
 		worse_acc.push_back(1);
 	if(accepted==3) //worse and not accepted
 		worse_acc.push_back(0);
-*/
 
 
 	//counting average values
 
 	//now not counting for time
-	worse_acc_ratio.push_back(1);
-	worse_rate.push_back(1);
-//	acc_ratio.push_back(1);
 	if(iter%200==0)
 	{
 		double mean=0;
-/*		if (worse_acc.size()>100)
+		if (worse_acc.size()>100)
 		{
 			for(int i=0;i<100;i++)
 				mean+=worse_acc[worse_acc.size()-100+i];
@@ -759,7 +837,7 @@ int opencl_fit_w_err::record_data()
 		}
 	
 		mean=0;
-*/
+
 		if (acc.size()>100)
 		{
 			for(int i=0;i<100;i++)

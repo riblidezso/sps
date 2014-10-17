@@ -40,7 +40,7 @@ set bmargin botmargin
 
 set xlabel "age [Gyr]"
 
-binwidth=(age_max-age_min)/(nbins*1e9)
+binwidth=(age_max-age_min+1)/(nbins*1e9)
 
 bin(x,width)=width*floor(x/width)
 
@@ -61,7 +61,7 @@ set rmargin lrmargin
 
 set xlabel "{/Symbol m} "
 
-binwidth=(mu_max-mu_min)/nbins
+binwidth=(mu_max-mu_min+0.05)/nbins
 
 p [] [0:0.25] "../points.dat" u (bin($2,binwidth)):(1.0/mu_records) smooth freq with boxes notitle 
 #title "{/Symbol m} distribution"
@@ -81,7 +81,7 @@ set xlabel "1000  Z"
 set lmargin lrmargin
 set rmargin cmargin
 
-binwidth=(metall_max-metall_min)*1000/(nbins)
+binwidth=(metall_max-metall_min+0.0001)*1000/(nbins)
 
 p [] [0:0.25] "../points.dat" u (bin(($5*1000),binwidth)):(1.0/metall_records) smooth freq with boxes notitle 
 #title "metallicity distribution"
@@ -98,7 +98,7 @@ unset ylabel
 set lmargin cmargin
 set rmargin lrmargin
 
-binwidth=(tauv_max-tauv_min)/nbins
+binwidth=(tauv_max-tauv_min+0.1)/nbins
 
 set xlabel "{/Symbol t}_v"
 
@@ -118,7 +118,7 @@ set ytics
 set lmargin lrmargin
 set rmargin cmargin
 
-binwidth=(tau_max-tau_min)/(nbins*1e9)
+binwidth=(tau_max-tau_min+1)/(nbins*1e9)
 
 set xlabel "{/Symbol t} [Gyr]"
 
@@ -137,7 +137,7 @@ set lmargin cmargin
 set rmargin lrmargin
 
 binwidth=0.004
-#(mu_max*tauv_max-mu_min*tauv_min)/nbins
+#(mu_max*tauv_max-mu_min*tauv_min+0.01)/nbins
 #ez igy gyenge
 
 set xlabel "{/Symbol t}_v {/Symbol m} "
@@ -169,7 +169,7 @@ set ylabel "P"
 
 set xlabel "vdisp [km/s]"
 
-binwidth=300000*(vdisp_max-vdisp_min)/(nbins)
+binwidth=300000*(vdisp_max-vdisp_min+0.00001)/(nbins)
 
 p [] [0:0.25] "../points.dat" u (bin(($6*300000),binwidth)+binwidth*0.5):(1.0/vdisp_records) smooth freq with boxes notitle 
 #title "vdisp distribution"

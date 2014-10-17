@@ -124,7 +124,19 @@ public: //data
 	double sigma;
 
 	std::vector<double> resampled_model;
-	int mes_nspecsteps;
+	size_t mes_nspecsteps;
+
+	//burnin indicator
+	bool burnin_ended;
+
+	//parameter fixing variables
+	double fix_dust_tau_v;
+	double fix_dust_mu;
+	double fix_sfr_tau;
+	double fix_age;
+	double fix_metall;
+	double fix_vdisp;
+
 };
 
 #endif
