@@ -171,23 +171,23 @@ int opencl_fit_w_err::fix_params()
 	if (config_map.count("fix_dust_tau_v")==1)
 	{
 		fix_dust_tau_v=true;
-		std::cout<<"dust_tau_v\t\tfixed"<<std::endl;
+		std::cout<<"dust_tau_v\tfixed"<<std::endl;
 	}
 	else
 	{
 		fix_dust_tau_v=false;
-		std::cout<<"dust_tau_v\t\tnot fixed"<<std::endl;
+		std::cout<<"dust_tau_v\tnot fixed"<<std::endl;
 	}
 
 	//set dust_mu
 	if (config_map.count("fix_dust_mu")==1)
 	{
-		fix_dust_tau_v=true;
+		fix_dust_mu=true;
 		std::cout<<"dust_tau_v\t\tfixed"<<std::endl;
 	}
 	else
 	{
-		fix_dust_tau_v=false;
+		fix_dust_mu=false;
 		std::cout<<"dust_mu\t\tnot fixed"<<std::endl;
 	}
 
