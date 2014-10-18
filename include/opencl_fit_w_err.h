@@ -13,6 +13,8 @@
 
 #include "read.h"
 
+#include <map>
+
 class opencl_fit_w_err{
 public:
 	opencl_fit_w_err(read& model);
@@ -26,12 +28,8 @@ public: //functions
 	int set_kern_arg();
 	int call_kernels();
 
-	int set_initial_params(	double s_dust_tau_v,
-				double s_dust_mu,
-				double s_sfr_tau,
-				double s_age,
-				double s_metall,
-				double s_vdisp);
+	int set_initial_params();
+	int fix_params();
 
 	int change_params(double opt_acc);
 
@@ -136,6 +134,12 @@ public: //data
 	double fix_age;
 	double fix_metall;
 	double fix_vdisp;
+
+	//test config file read	
+	int read_config(std::string input_filename);
+	
+	std::map<std::string,std::string> config_map;
+
 
 };
 

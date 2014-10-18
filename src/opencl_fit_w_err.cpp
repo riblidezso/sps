@@ -51,18 +51,198 @@ opencl_fit_w_err::opencl_fit_w_err(read& model)
 	// the step is relative so it is 0.8% now
 	sigma=0.008;
 
-
-	//parameter fixing is not yet fully supported
-	// you shuld just change the values here
-	//
-	fix_dust_tau_v=false;
-	fix_dust_mu=false;
-	fix_sfr_tau=false;
-	fix_age=false;
-	fix_metall=false;
-	fix_vdisp=false;
-
 }
+
+#include <iostream>
+#include <sstream>
+int opencl_fit_w_err::read_config(std::string input_filename)
+{
+	std::ifstream infile(input_filename.c_str(), std::ifstream::in );
+	std::string str;
+	while(getline(infile,str))
+	{
+		std::stringstream sstr;
+		std::vector<std::string> tempvec;
+		sstr<<str;	
+		while(sstr>>str)
+		{
+			tempvec.push_back(str);
+		}
+		if( tempvec.size()>0)
+		{
+			std::cout<<tempvec[0]<<"\t\t"<<tempvec[1]<<std::endl;
+			config_map.insert( std::pair<std::string,std::string> (tempvec[0],tempvec[1]) );
+		}
+	}
+//	std::cout<<"init_guess for age\t"<<atof(config_map["init_guess_age"].c_str())<<std::endl;
+
+	infile.close();
+	return 0;
+}
+
+
+//set initial parameters
+int opencl_fit_w_err::set_initial_params()
+{
+	std::cout<<"\nSetting initial parameter guesses:\n";	
+	
+	//set dust_tau_v
+	if (config_map.count("init_guess_dust_tau_v")==1)
+	{
+		dust_tau_v=atof(config_map["init_guess_dust_tau_v"].c_str());
+		std::cout<<"initial guess for dust_tau_v= "<<dust_tau_v<<std::endl;
+	}
+	else
+	{
+		std::cout<<"initial guess for dust_tau_v not found, setting it to 1.0"<<std::endl;
+		dust_tau_v=1.0;
+	}
+
+	//set dust_mu
+	if (config_map.count("init_guess_dust_mu")==1)
+	{
+		dust_mu=atof(config_map["init_guess_dust_mu"].c_str());
+		std::cout<<"initial guess for dust_mu= "<<dust_mu<<std::endl;
+	}
+	else
+	{
+		std::cout<<"initial guess for dust_mu not found, setting it to 0.3"<<std::endl;
+		dust_mu=0.3;
+	}
+
+	//set sfr_tau 
+	if (config_map.count("init_guess_sfr_tau")==1)
+	{
+		sfr_tau=atof(config_map["init_guess_sfr_tau"].c_str());
+		std::cout<<"initial guess for sfr_tau= "<<sfr_tau<<std::endl;
+	}
+	else
+	{
+		std::cout<<"initial guess for sfr_tau not found, setting it to 3.0e+08"<<std::endl;
+		sfr_tau=3.0e+08;
+	}
+
+	//set metall 
+	if (config_map.count("init_guess_metall")==1)
+	{
+		metall=atof(config_map["init_guess_metall"].c_str());
+		std::cout<<"initial guess for metall= "<<metall<<std::endl;
+	}
+	else
+	{
+		std::cout<<"initial guess for metall not found, setting it to 0.01 "<<std::endl;
+		metall=0.01;
+	}
+
+	//set age 
+	if (config_map.count("init_guess_age")==1)
+	{
+		age=atof(config_map["init_guess_age"].c_str());
+		std::cout<<"initial guess for age= "<<age<<std::endl;
+	}
+	else
+	{
+		std::cout<<"initial guess for age not found, setting it to 2e+09 "<<std::endl;
+		age=2e+09;
+	}
+
+	//set vdisp 
+	if (config_map.count("init_guess_vdisp")==1)
+	{
+		vdisp=atof(config_map["init_guess_vdisp"].c_str());
+		std::cout<<"initial guess for vdisp= "<<vdisp<<std::endl;
+	}
+	else
+	{
+		std::cout<<"initial guess for vdisp not found, setting it to 0.0003 "<<std::endl;
+		metall=0.0003;
+	}
+	std::cout<<"\n";	
+
+	return 0;
+}
+
+//fix parameters if needed
+int opencl_fit_w_err::fix_params()
+{
+	std::cout<<"\nFixing parameters :\n";	
+	
+	//set dust_tau_v
+	if (config_map.count("fix_dust_tau_v")==1)
+	{
+		fix_dust_tau_v=true;
+		std::cout<<"dust_tau_v\t\tfixed"<<std::endl;
+	}
+	else
+	{
+		fix_dust_tau_v=false;
+		std::cout<<"dust_tau_v\t\tnot fixed"<<std::endl;
+	}
+
+	//set dust_mu
+	if (config_map.count("fix_dust_mu")==1)
+	{
+		fix_dust_tau_v=true;
+		std::cout<<"dust_tau_v\t\tfixed"<<std::endl;
+	}
+	else
+	{
+		fix_dust_tau_v=false;
+		std::cout<<"dust_mu\t\tnot fixed"<<std::endl;
+	}
+
+	//set sfr_tau 
+	if (config_map.count("fix_sfr_tau")==1)
+	{
+		fix_sfr_tau=true;
+		std::cout<<"sfr_tau\t\tfixed"<<std::endl;
+	}
+	else
+	{
+		fix_sfr_tau=false;
+		std::cout<<"sfr_tau\t\tnot fixed"<<std::endl;
+	}
+
+	//set metall 
+	if (config_map.count("fix_metall")==1)
+	{
+		fix_metall=true;
+		std::cout<<"metall\t\tfixed"<<std::endl;
+	}
+	else
+	{
+		fix_metall=false;
+		std::cout<<"metall\t\tnot fixed"<<std::endl;
+	}
+
+	//set age 
+	if (config_map.count("fix_age")==1)
+	{
+		fix_age=true;
+		std::cout<<"age\t\tfixed"<<std::endl;
+	}
+	else
+	{
+		fix_age=false;
+		std::cout<<"age\t\tnot fixed"<<std::endl;
+	}
+
+	//set vdisp 
+	if (config_map.count("fix_vdisp")==1)
+	{
+		fix_vdisp=true;
+		std::cout<<"vdisp\t\tfixed"<<std::endl;
+	}
+	else
+	{
+		fix_vdisp=false;
+		std::cout<<"vdisp\t\tnot fixed"<<std::endl;
+	}
+	std::cout<<"\n";	
+
+	return 0;
+}
+
 
 
 //this function gets 
@@ -459,23 +639,6 @@ int opencl_fit_w_err::set_kern_arg()
 	return status;
 }
 
-//set initial parameters
-int opencl_fit_w_err::set_initial_params(double s_dust_tau_v,
-					double s_dust_mu,
-					double s_sfr_tau,
-					double s_age,
-					double s_metall,
-					double s_vdisp)
-{
-	dust_tau_v=s_dust_tau_v;
-	dust_mu=s_dust_mu;
-	sfr_tau=s_sfr_tau;
-	age=s_age;
-	metall=s_metall;
-	vdisp=s_vdisp;
-
-	return 0;
-}
 
 
 //change parameters
@@ -769,8 +932,6 @@ int opencl_fit_w_err::record_data()
 		//rejected step
 		//that might would result in 
 		//a bit different histograms
-		//
-		//burn in 5000 hardcoded
 		if(burnin_ended)
 			points.push_back(temp_point); 
 		
