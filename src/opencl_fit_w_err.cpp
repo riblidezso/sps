@@ -90,7 +90,7 @@ int opencl_fit_w_err::set_initial_params()
 	if (config_map.count("init_guess_dust_tau_v")==1)
 	{
 		dust_tau_v=atof(config_map["init_guess_dust_tau_v"].c_str());
-		std::cout<<"initial guess for dust_tau_v=\t\t"<<dust_tau_v<<std::endl;
+		std::cout<<"initial guess for dust_tau_v\t\t"<<dust_tau_v<<std::endl;
 	}
 	else
 	{
@@ -102,7 +102,7 @@ int opencl_fit_w_err::set_initial_params()
 	if (config_map.count("init_guess_dust_mu")==1)
 	{
 		dust_mu=atof(config_map["init_guess_dust_mu"].c_str());
-		std::cout<<"initial guess for dust_mu=\t\t"<<dust_mu<<std::endl;
+		std::cout<<"initial guess for dust_mu\t\t"<<dust_mu<<std::endl;
 	}
 	else
 	{
@@ -114,7 +114,7 @@ int opencl_fit_w_err::set_initial_params()
 	if (config_map.count("init_guess_sfr_tau")==1)
 	{
 		sfr_tau=atof(config_map["init_guess_sfr_tau"].c_str());
-		std::cout<<"initial guess for sfr_tau=\t\t"<<sfr_tau<<std::endl;
+		std::cout<<"initial guess for sfr_tau\t\t"<<sfr_tau<<std::endl;
 	}
 	else
 	{
@@ -126,7 +126,7 @@ int opencl_fit_w_err::set_initial_params()
 	if (config_map.count("init_guess_metall")==1)
 	{
 		metall=atof(config_map["init_guess_metall"].c_str());
-		std::cout<<"initial guess for metall=\t\t"<<metall<<std::endl;
+		std::cout<<"initial guess for metall\t\t"<<metall<<std::endl;
 	}
 	else
 	{
@@ -138,7 +138,7 @@ int opencl_fit_w_err::set_initial_params()
 	if (config_map.count("init_guess_age")==1)
 	{
 		age=atof(config_map["init_guess_age"].c_str());
-		std::cout<<"initial guess for age=\t\t"<<age<<std::endl;
+		std::cout<<"initial guess for age\t\t\t"<<age<<std::endl;
 	}
 	else
 	{
@@ -150,7 +150,7 @@ int opencl_fit_w_err::set_initial_params()
 	if (config_map.count("init_guess_vdisp")==1)
 	{
 		vdisp=atof(config_map["init_guess_vdisp"].c_str());
-		std::cout<<"initial guess for vdisp=\t\t"<<vdisp<<std::endl;
+		std::cout<<"initial guess for vdisp\t\t"<<vdisp<<std::endl;
 	}
 	else
 	{
