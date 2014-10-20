@@ -902,7 +902,7 @@ int opencl_fit_w_err::record_data()
 	//check if burnin has ended
 	if (burnin_ended==false )
 	{
-		int window=20000;
+		int window=5000;
 		if ( iter > window )
 		{
 			if (chi > out_chi_evol[iter-window])
