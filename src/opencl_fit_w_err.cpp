@@ -70,12 +70,9 @@ int opencl_fit_w_err::read_config(std::string input_filename)
 		}
 		if( tempvec.size()>0)
 		{
-			std::cout<<tempvec[0]<<"\t\t"<<tempvec[1]<<std::endl;
 			config_map.insert( std::pair<std::string,std::string> (tempvec[0],tempvec[1]) );
 		}
 	}
-//	std::cout<<"init_guess for age\t"<<atof(config_map["init_guess_age"].c_str())<<std::endl;
-
 	infile.close();
 	return 0;
 }
@@ -183,7 +180,7 @@ int opencl_fit_w_err::fix_params()
 	if (config_map.count("fix_dust_mu")==1)
 	{
 		fix_dust_mu=true;
-		std::cout<<"dust_tau_v\t\tfixed"<<std::endl;
+		std::cout<<"dust_mu\t\tfixed"<<std::endl;
 	}
 	else
 	{
