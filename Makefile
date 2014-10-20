@@ -5,6 +5,13 @@ LINK = $(CXX)
 # Flags
 CXXFLAGS = -std=c++11 -I$(IDIR) -I../NVIDIA_GPU_COMPUTING_SDK/OpenCL/common/inc
 
+#Opencl library place (Apple)
+ifeq ($(shell uname), Darwin) # Apple
+    LIBOPENCL=-framework OpenCL
+else       # Linux
+    LIBOPENCL=-lOpenCL
+endif
+
 # Paths
 BIN = bin
 ODIR = bin/obj
@@ -42,14 +49,14 @@ $(ODIR)/sps_read.o : $(SRC)/sps_read.cpp $(IDIR)/sps_read.h
 
 #Building fitter
 $(BIN)/fit_sdss : $(ODIR)/main_fit_sdss.o $(ODIR)/opencl_fit_w_err.o $(ODIR)/sps_read.o  $(ODIR)/sps_write.o
-	$(LINK) -o $@ $^ -lOpenCL --framework OpenCL
+	$(LINK) -o $@ $^ $(LIBOPENCL) 
 
 $(ODIR)/main_fit_sdss.o : $(SRC)/main_fit_sdss.cpp
-	$(CXX) -c -o  $@ $< $(CXXFLAGS) -lOpenCL --framework OpenCL
+	$(CXX) -c -o  $@ $< $(CXXFLAGS) $(LIBOPENCL)
 
 
 $(ODIR)/opencl_fit_w_err.o : $(SRC)/opencl_fit_w_err.cpp $(IDIR)/opencl_fit_w_err.h
-	$(CXX) -c -o  $@ $< $(CXXFLAGS) -lOpenCL --framework OpenCL
+	$(CXX) -c -o  $@ $< $(CXXFLAGS) $(LIBOPENCL)
 
 
 $(ODIR)/sps_read.o : $(SRC)/sps_read.cpp $(IDIR)/sps_read.h 
