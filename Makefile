@@ -27,7 +27,7 @@ $(ODIR)/convert_ascii_2_bin.o : $(SRC)/convert_ascii_2_bin.cpp $(IDIR)/convert_a
 
  
 #Building spectrum generator
-$(BIN)/spec_gen : $(ODIR)/main_spec_gen.o  $(ODIR)/spec_gen.o $(ODIR)/read.o 
+$(BIN)/spec_gen : $(ODIR)/main_spec_gen.o  $(ODIR)/spec_gen.o $(ODIR)/sps_read.o 
 	$(LINK) -o $@ $^
 
 $(ODIR)/main_spec_gen.o : $(SRC)/main_spec_gen.cpp
@@ -36,12 +36,12 @@ $(ODIR)/main_spec_gen.o : $(SRC)/main_spec_gen.cpp
 $(ODIR)/spec_gen.o : $(SRC)/spec_gen.cpp $(IDIR)/spec_gen.h
 	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
 
-$(ODIR)/read.o : $(SRC)/read.cpp $(IDIR)/read.h 
+$(ODIR)/sps_read.o : $(SRC)/sps_read.cpp $(IDIR)/sps_read.h 
 	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
 
 
 #Building fitter
-$(BIN)/fit_sdss : $(ODIR)/main_fit_sdss.o $(ODIR)/opencl_fit_w_err.o $(ODIR)/read.o  $(ODIR)/write.o
+$(BIN)/fit_sdss : $(ODIR)/main_fit_sdss.o $(ODIR)/opencl_fit_w_err.o $(ODIR)/sps_read.o  $(ODIR)/sps_write.o
 	$(LINK) -o $@ $^ -lOpenCL
 
 $(ODIR)/main_fit_sdss.o : $(SRC)/main_fit_sdss.cpp
@@ -50,10 +50,10 @@ $(ODIR)/main_fit_sdss.o : $(SRC)/main_fit_sdss.cpp
 $(ODIR)/opencl_fit_w_err.o : $(SRC)/opencl_fit_w_err.cpp $(IDIR)/opencl_fit_w_err.h
 	$(CXX) -c -o  $@ $< $(CXXFLAGS) -lOpenCL
 
-$(ODIR)/read.o : $(SRC)/read.cpp $(IDIR)/read.h 
+$(ODIR)/sps_read.o : $(SRC)/sps_read.cpp $(IDIR)/sps_read.h 
 	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
 
-$(ODIR)/write.o : $(SRC)/write.cpp $(IDIR)/write.h 
+$(ODIR)/sps_write.o : $(SRC)/sps_write.cpp $(IDIR)/sps_write.h 
 	$(CXX) -c -o  $@ $< $(CXXFLAGS)
 
 .PHONY: clean

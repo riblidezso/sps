@@ -2,13 +2,18 @@
 #include <sstream>
 #include <ctime>
 
-#include <CL/cl.h>
+#ifdef __APPLE__
+    #include "OpenCL/opencl.h"
+#else
+    #include "CL/cl.h"
+#endif
+//#include <CL/cl.h>
 
 #include <string>
 #include <string.h>
 
-#include "read.h"
-#include "write.h"
+#include "sps_read.h"
+#include "sps_write.h"
 #include "opencl_fit_w_err.h"
 
 
@@ -18,7 +23,7 @@ int main(int argc, char* argv[])
 	int MAXITER;
 
 	//reading models
-	read model;
+	sps_read model;
 	error=model.read_time_bin();
 	if(error!=0)
 		return 1;

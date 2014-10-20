@@ -6,21 +6,26 @@
 #include <vector>
 #include <sstream>
 
-#include <CL/cl.h>
-#include <ctime>
+#ifdef __APPLE__
+    #include "OpenCL/opencl.h"
+#else
+    #include "CL/cl.h"
+#endif
+//#include <CL/cl.h>
+//#include <ctime>
 
 #include <random>
 
-#include "read.h"
+#include "sps_read.h"
 
 #include <map>
 
 class opencl_fit_w_err{
 public:
-	opencl_fit_w_err(read& model);
+	opencl_fit_w_err(sps_read& model);
 
 public: //functions
-	int resample_models_2_mes(read& model);
+	int resample_models_2_mes(sps_read& model);
 
 	int convertToString(const char *filename, std::string& s);
 	int opencl_initialize(std::string kernel_filename);

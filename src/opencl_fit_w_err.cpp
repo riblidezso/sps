@@ -1,6 +1,6 @@
 #include "opencl_fit_w_err.h"
-#include "read.h"
-#include "write.h"
+#include "sps_read.h"
+#include "sps_write.h"
 
 #include <float.h>
 #include <string.h>
@@ -8,7 +8,7 @@
 
 
 //initalizing from the read object
-opencl_fit_w_err::opencl_fit_w_err(read& model)
+opencl_fit_w_err::opencl_fit_w_err(sps_read& model)
 {
 	//copy data sizes
 	nspecsteps=model.wavelengths.size();
@@ -248,7 +248,7 @@ int opencl_fit_w_err::fix_params()
 
 //and then resamples all the models to the wavelengths of
 //the measurement, this reduces computation time 6900->3-4000
-int opencl_fit_w_err::resample_models_2_mes(read& model)
+int opencl_fit_w_err::resample_models_2_mes(sps_read& model)
 {
 	//resize the vector that will store the resampled model
 	resampled_model.resize(ntimesteps * mes_nspecsteps * 6);
@@ -1017,6 +1017,7 @@ int opencl_fit_w_err::write_results()
 	output.push_back(mes_spec_err);
 	output.push_back(result);
 
+	//functions from sps_write 
 	write_table_col(output,"../output/fit.txt");
 	write_table_row(points,"../output/points.dat");
 
