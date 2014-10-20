@@ -39,7 +39,7 @@ opencl_fit_w_err::opencl_fit_w_err(read& model)
 	best_chi=DBL_MAX;
 
 	//burnin indicator
-	burnin_ended==false;
+	burnin_ended=false;
 
 	//imf, if you want to use salpeter
 	//uncomment that line and comment chabrier
