@@ -71,7 +71,11 @@ __kernel void spec_gen (
 	}
 
 	//the last step foor smoothness with linear interpol
-	temp1+= ((age-time[i-1]) * ( (time[i]-age) * model[(i-1)*nspecsteps + wave] + (age-time[i-1]) * model[i*nspecsteps + wave] )) / (time[i]-time[i-1]) ;
+//old one
+//	temp1+= ((age-time[i-1]) * ( (time[i]-age) * model[(i-1)*nspecsteps + wave] + (age-time[i-1]) * model[i*nspecsteps + wave] )) / (time[i]-time[i-1]) ;
+
+//test
+	temp1+= (age-time[i-1]) *  model[i*nspecsteps + wave]  ;
 
 	result_no_vel[wave]= temp*exp(-exponent*dust_tau_v) + temp1*exp(-exponent*dust_tau_v*dust_mu);
 	
