@@ -379,7 +379,7 @@ int opencl_fit_w_err::opencl_initialize(std::string kernel_filename)
 	{
 		std::cerr << "Error: Getting platforms!" << std::endl;
 		std::cerr << "Error number= " <<status<< std::endl;
-		return 1;
+		return status;
 	}
 
 	//Choosing platform
@@ -491,12 +491,18 @@ int opencl_fit_w_err::opencl_initialize(std::string kernel_filename)
 	//Create context
 	context = clCreateContext(NULL,1, devices,NULL,NULL,&status);
 	if (status!=0)
+	{
 		std::cerr<<"ERROR creating context: "<<status<<std::endl;
-	 
+		return status;
+	}
+ 
 	//Creating command queue associate with the context
 	commandQueue = clCreateCommandQueue(context, device, 0, &status);
 	if (status!=0)
+	{
 		std::cerr<<"ERROR creating commandqueue: "<<status<<std::endl;
+		return status;
+	}
 
 	//open kernel file and convert it to char array
 	const char *filename = kernel_filename.c_str();
@@ -508,7 +514,10 @@ int opencl_fit_w_err::opencl_initialize(std::string kernel_filename)
 	//Create program object
 	program = clCreateProgramWithSource(context, 1, &source, sourceSize, &status);
 	if (status!=0)
+	{
 		std::cout<<"ERROR creating program: "<<status<<std::endl;
+		return status;
+	}
 
 	//Building program 
 	status=clBuildProgram(program, 1,devices,NULL,NULL,NULL);
@@ -529,6 +538,8 @@ int opencl_fit_w_err::opencl_initialize(std::string kernel_filename)
 		//print log info
 		std::cout<<"log:\n "<<log<<std::endl;
 		delete[] log;
+
+		return status;
 	}
 
 	return status;
@@ -562,21 +573,33 @@ int opencl_fit_w_err::opencl_kern_mem()
 
 	//error check
 	if (status!=0)
+	{
 		std::cerr<<"ERROR creating buffers: "<<status<<std::endl;
+		return status;
+	}
 
 
 	// Create kernel objects
 	kernel_spec_gen = clCreateKernel(program,"spec_gen", &status);
 	if (status!=0)
+	{
 		std::cerr<<"ERROR creating kernel_spec_gen: "<<status<<std::endl;
+		return status;
+	}	
 
 	kernel_vel_disp = clCreateKernel(program,"mask_veloc_disp", &status);
 	if (status!=0)
+	{
 		std::cerr<<"ERROR creating kernel_vel_disp: "<<status<<std::endl;
+		return status;
+	}	
 
 	kernel_chi_calc = clCreateKernel(program,"chi_calculation", &status);
 	if (status!=0)
+	{
 		std::cerr<<"ERROR creating kernel_chi_calc: "<<status<<std::endl;
+		return status;
+	}	
 
 	return status;
 }
@@ -796,7 +819,10 @@ int opencl_fit_w_err::call_kernels()
 	size_t global_work_size[1] = {mes_nspecsteps};
 	status = clEnqueueNDRangeKernel(commandQueue, kernel_spec_gen, 1, NULL, global_work_size, NULL, 0, NULL,NULL);
 	if (status!=0)
+	{
 		std::cerr<<"ERROR running kernel_spec_gen: "<<status<<std::endl;
+		return status;
+	}
 
 
 	//next kernel for velocity dispersion
@@ -805,7 +831,7 @@ int opencl_fit_w_err::call_kernels()
 	if (status!=0)
 	{
 		std::cerr<<"ERROR running kernel_vel_disp: "<<status<<std::endl;
-		return 1;
+		return status;
 	}
 
 	//Read the result back to host memory
@@ -814,7 +840,7 @@ int opencl_fit_w_err::call_kernels()
 	if (status!=0)
 	{
 		std::cerr<<"ERROR reading buffer,from kernel_vel: "<<status<<std::endl;
-		return 1;
+		return status;
 	}
 
 
@@ -835,14 +861,14 @@ int opencl_fit_w_err::call_kernels()
 	if (status!=0)
 	{
 		std::cerr<<"ERROR setting kernel_chi_calc arguments: "<<status<<std::endl;
-		return 1;
+		return status;
 	}
 	//Running the kernel
 	status = clEnqueueNDRangeKernel(commandQueue, kernel_chi_calc, 1, NULL, global_work_size, NULL, 0, NULL, NULL); 
 	if (status!=0)
 	{
 		std::cerr<<"ERROR running kernel_chi_calc: "<<status<<std::endl;
-		return 1;
+		return status;
 	}	
 
 	//Read the chis to host memory.
@@ -852,7 +878,7 @@ int opencl_fit_w_err::call_kernels()
 	if (status!=0)
 	{
 		std::cerr<<"ERROR reading chi buffer: "<<status<<std::endl;
-		return 1;
+		return status;
 	}
 	
 	return status;
