@@ -42,13 +42,15 @@ $(ODIR)/sps_read.o : $(SRC)/sps_read.cpp $(IDIR)/sps_read.h
 
 #Building fitter
 $(BIN)/fit_sdss : $(ODIR)/main_fit_sdss.o $(ODIR)/opencl_fit_w_err.o $(ODIR)/sps_read.o  $(ODIR)/sps_write.o
-	$(LINK) -o $@ $^ -lOpenCL
+	$(LINK) -o $@ $^ -lOpenCL --framework OpenCL
 
 $(ODIR)/main_fit_sdss.o : $(SRC)/main_fit_sdss.cpp
-	$(CXX) -c -o  $@ $< $(CXXFLAGS) -lOpenCL
+	$(CXX) -c -o  $@ $< $(CXXFLAGS) -lOpenCL --framework OpenCL
+
 
 $(ODIR)/opencl_fit_w_err.o : $(SRC)/opencl_fit_w_err.cpp $(IDIR)/opencl_fit_w_err.h
-	$(CXX) -c -o  $@ $< $(CXXFLAGS) -lOpenCL
+	$(CXX) -c -o  $@ $< $(CXXFLAGS) -lOpenCL --framework OpenCL
+
 
 $(ODIR)/sps_read.o : $(SRC)/sps_read.cpp $(IDIR)/sps_read.h 
 	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
