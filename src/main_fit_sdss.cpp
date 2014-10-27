@@ -7,7 +7,6 @@
 #else
     #include "CL/cl.h"
 #endif
-//#include <CL/cl.h>
 
 #include <string>
 #include <string.h>
@@ -15,6 +14,7 @@
 #include "sps_read.h"
 #include "sps_write.h"
 #include "opencl_fit_w_err.h"
+#include "sps_mcmc.h"
 
 
 int main(int argc, char* argv[])
@@ -37,12 +37,15 @@ int main(int argc, char* argv[])
 	//reading spectrum to fit	
 	error|=model.usr_read_sdss_csv();
 
+
+	//initialize objects
 	opencl_fit_w_err fitter(model);
+	sps_mcmc mcmc_fitter;
 
 	//test config read
 	if(argc==3)
 	{
-		fitter.read_config(argv[1]);
+		mcmc_fitter.read_config(argv[1]);
 		MAXITER=atoi(argv[2]);
 		
 	}
@@ -57,9 +60,9 @@ int main(int argc, char* argv[])
 
 	//set ininital parameter guesses read
 	//from the config file above
-	fitter.set_initial_params();
+	mcmc_fitter.set_initial_params();
 	//fix parameters if asked to
-	fitter.fix_params();
+	mcmc_fitter.fix_params();
 
 
 	//resampling models
@@ -82,9 +85,21 @@ int main(int argc, char* argv[])
 	std::cout<<"fitting started...:\n";
 
 	// fitting 
-	for(fitter.iter= 0; fitter.iter<(MAXITER);fitter.iter++)
+	for(mcmc_fitter.iter= 0; mcmc_fitter.iter<(MAXITER);mcmc_fitter.iter++)
 	{
-		error=fitter.change_params(0.3);
+		error=mcmc_fitter.change_params(0.3);
+		if(error!=0)
+			break;
+
+		error=fitter.set_params(
+				mcmc_fitter.dust_tau_v,
+				mcmc_fitter.dust_mu,
+				mcmc_fitter.sfr_tau,
+				mcmc_fitter.age,
+				mcmc_fitter.metall,
+				mcmc_fitter.vdisp);
+
+		error=fitter.change_kernel_params();
 		if(error!=0)
 			break;
 
@@ -92,21 +107,28 @@ int main(int argc, char* argv[])
 		if(error!=0)
 			break;
 		
-		error=fitter.evaluate_chi(1);
+		error=mcmc_fitter.evaluate_chi(fitter.chi);
 		if(error!=0)
 			break;
 
-		error=fitter.record_data();
+		error=fitter.read_best_result();
 		if(error!=0)
 			break;
 
-		if( (fitter.iter % 1000) == 0 && fitter.iter>0)
-			std::cout<<fitter.iter<<" iterations done..."<<"\n";
-		if( (fitter.iter % 10000) == 0 && fitter.iter>0)
+		error=mcmc_fitter.record_data();
+		if(error!=0)
+			break;
+
+		if( (mcmc_fitter.iter % 1000) == 0 && mcmc_fitter.iter>0)
+			std::cout<<mcmc_fitter.iter<<" iterations done..."<<"\n";
+		if( (mcmc_fitter.iter % 10000) == 0 && mcmc_fitter.iter>0)
 			std::cout<<"\n";	
 	}
 
-	error=fitter.write_results();
+	error=mcmc_fitter.write_results();
+	if(error!=0)
+		return 1;
+	error=fitter.write_fit_result();
 	if(error!=0)
 		return 1;
 
