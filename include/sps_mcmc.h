@@ -19,9 +19,8 @@ public:
 public:
 //functions
 
-	int set_initial_params();
-
-	int fix_params();
+	//config file read	
+	int read_config(std::string input_filename);
 
 	int change_params(double opt_acc);
 
@@ -31,19 +30,9 @@ public:
 
 	int write_results();
 
-	//test config file read	
-	int read_config(std::string input_filename);
 
 //data
 	int iter;
-
-//alpha version
-	//fitted params
-	double dust_tau_v,dust_mu,sfr_tau, age, metall, vdisp;
-	//proposed steps
-	double d_dust_tau_v, d_dust_mu, d_sfr_tau, d_age, d_metall, d_vdisp;
-	//best params
-	double best_dust_tau_v, best_dust_mu, best_sfr_tau, best_age, best_metall, best_vdisp;
 
 	//chi values
 	double chi,chi_before, best_chi;
@@ -79,22 +68,19 @@ public:
 	//all the points in the markov chain
 	std::vector< std::vector <double> > points;
 
-	//parameter fixing variables
-	double fix_dust_tau_v;
-	double fix_dust_mu;
-	double fix_sfr_tau;
-	double fix_age;
-	double fix_metall;
-	double fix_vdisp;
-
 	//burnin indicator
 	bool burnin_ended;
 
 	//step size
 	double sigma;
 
-	//map for config info
-	std::map<std::string,std::string> config_map;
+	//maps for parameters
+	std::map<std::string,double> parameters;
+	std::map<std::string,double> best_parameters;
+	std::map<std::string,double> steps;
+	std::map<std::string,bool> fix_parameters;
+	std::map<std::string,double> param_upper_bound;
+	std::map<std::string,double> param_lower_bound;
 };
 
 #endif

@@ -22,8 +22,6 @@ sps_mcmc::sps_mcmc()
 
 //reads config file
 //config file must have 2 columns
-//
-//ok
 int sps_mcmc::read_config(std::string input_filename)
 {
 	std::ifstream infile(input_filename.c_str(), std::ifstream::in );
@@ -37,178 +35,62 @@ int sps_mcmc::read_config(std::string input_filename)
 		{
 			tempvec.push_back(str);
 		}
-		if( tempvec.size()>0)
-		{
-			config_map.insert( std::pair<std::string,std::string> (tempvec[0],tempvec[1]) );
+
+		if (tempvec.size() !=0 )
+		{	
+			//initializing parameters
+			if( tempvec[0]=="parameter")
+			//need more error checking 
+			{
+				parameters.insert(std::pair<std::string,double> (tempvec[1],atof(tempvec[2].c_str())));
+				best_parameters.insert(std::pair<std::string,double> (tempvec[1],atof(tempvec[2].c_str())));
+				steps.insert(std::pair<std::string,double> (tempvec[1],0));
+			}	
+	
+			//parameter boundaries
+			else if( tempvec[0]=="bounds")
+			//need more error checking 
+			{
+				param_lower_bound.insert(std::pair<std::string,double> (tempvec[1],atof(tempvec[2].c_str())));
+				param_upper_bound.insert(std::pair<std::string,double> (tempvec[1],atof(tempvec[3].c_str())));
+			}	
+			
+			//fixing params
+			else if( tempvec[0]=="fix")
+			//need more error checking 
+			{
+				if (tempvec[2]=="yes")
+				{
+					fix_parameters.insert(std::pair<std::string,double> (tempvec[1],true));
+				}
+				else if (tempvec[2]=="no")
+				{
+					fix_parameters.insert(std::pair<std::string,double> (tempvec[1],false));
+				}
+			}	
 		}
 	}
 	infile.close();
-	return 0;
-}
 
 
-//set initial parameters from config map
-//
-//ok
-int sps_mcmc::set_initial_params()
-{
-	std::cout<<"\nSetting initial parameter guesses:\n";	
-	
-	//set dust_tau_v
-	if (config_map.count("init_guess_dust_tau_v")==1)
+	//print info
+	std::cout<<"\n\nInitial parameters guesses:"<<std::endl;
+	for (auto& param: parameters )
 	{
-		dust_tau_v=atof(config_map["init_guess_dust_tau_v"].c_str());
-		std::cout<<"initial guess for dust_tau_v\t\t"<<dust_tau_v<<std::endl;
-	}
-	else
-	{
-		std::cout<<"initial guess for dust_tau_v not found, setting it to 1.0"<<std::endl;
-		dust_tau_v=1.0;
+		std::cout<<param.first<<"\t"<<param.second<<std::endl;
 	}
 
-	//set dust_mu
-	if (config_map.count("init_guess_dust_mu")==1)
+	std::cout<<"\n\nFix parameters:"<<std::endl;
+	for (auto& param: fix_parameters )
 	{
-		dust_mu=atof(config_map["init_guess_dust_mu"].c_str());
-		std::cout<<"initial guess for dust_mu\t\t"<<dust_mu<<std::endl;
-	}
-	else
-	{
-		std::cout<<"initial guess for dust_mu not found, setting it to 0.3"<<std::endl;
-		dust_mu=0.3;
+		std::cout<<param.first<<"\t"<<param.second<<std::endl;
 	}
 
-	//set sfr_tau 
-	if (config_map.count("init_guess_sfr_tau")==1)
+	std::cout<<"\n\nbounds :"<<std::endl;
+	for (auto& param: param_lower_bound )
 	{
-		sfr_tau=atof(config_map["init_guess_sfr_tau"].c_str());
-		std::cout<<"initial guess for sfr_tau\t\t"<<sfr_tau<<std::endl;
+		std::cout<<param.first<<"\t"<<param.second<<"\t"<<param_upper_bound[param.first]<<std::endl;
 	}
-	else
-	{
-		std::cout<<"initial guess for sfr_tau not found, setting it to 3.0e+08"<<std::endl;
-		sfr_tau=3.0e+08;
-	}
-
-	//set metall 
-	if (config_map.count("init_guess_metall")==1)
-	{
-		metall=atof(config_map["init_guess_metall"].c_str());
-		std::cout<<"initial guess for metall\t\t"<<metall<<std::endl;
-	}
-	else
-	{
-		std::cout<<"initial guess for metall not found, setting it to 0.01 "<<std::endl;
-		metall=0.01;
-	}
-
-	//set age 
-	if (config_map.count("init_guess_age")==1)
-	{
-		age=atof(config_map["init_guess_age"].c_str());
-		std::cout<<"initial guess for age\t\t\t"<<age<<std::endl;
-	}
-	else
-	{
-		std::cout<<"initial guess for age not found, setting it to 2e+09 "<<std::endl;
-		age=2e+09;
-	}
-
-	//set vdisp 
-	if (config_map.count("init_guess_vdisp")==1)
-	{
-		vdisp=atof(config_map["init_guess_vdisp"].c_str());
-		std::cout<<"initial guess for vdisp\t\t"<<vdisp<<std::endl;
-	}
-	else
-	{
-		std::cout<<"initial guess for vdisp not found, setting it to 0.0003 "<<std::endl;
-		metall=0.0003;
-	}
-	std::cout<<"\n";	
-
-	return 0;
-}
-
-//fix parameters if needed
-//
-//ok
-int sps_mcmc::fix_params()
-{
-	std::cout<<"\nFixing parameters :\n";	
-	
-	//set dust_tau_v
-	if (config_map.count("fix_dust_tau_v")==1)
-	{
-		fix_dust_tau_v=true;
-		std::cout<<"dust_tau_v\tfixed"<<std::endl;
-	}
-	else
-	{
-		fix_dust_tau_v=false;
-		std::cout<<"dust_tau_v\tnot fixed"<<std::endl;
-	}
-
-	//set dust_mu
-	if (config_map.count("fix_dust_mu")==1)
-	{
-		fix_dust_mu=true;
-		std::cout<<"dust_mu\t\tfixed"<<std::endl;
-	}
-	else
-	{
-		fix_dust_mu=false;
-		std::cout<<"dust_mu\t\tnot fixed"<<std::endl;
-	}
-
-	//set sfr_tau 
-	if (config_map.count("fix_sfr_tau")==1)
-	{
-		fix_sfr_tau=true;
-		std::cout<<"sfr_tau\t\tfixed"<<std::endl;
-	}
-	else
-	{
-		fix_sfr_tau=false;
-		std::cout<<"sfr_tau\t\tnot fixed"<<std::endl;
-	}
-
-	//set metall 
-	if (config_map.count("fix_metall")==1)
-	{
-		fix_metall=true;
-		std::cout<<"metall\t\tfixed"<<std::endl;
-	}
-	else
-	{
-		fix_metall=false;
-		std::cout<<"metall\t\tnot fixed"<<std::endl;
-	}
-
-	//set age 
-	if (config_map.count("fix_age")==1)
-	{
-		fix_age=true;
-		std::cout<<"age\t\tfixed"<<std::endl;
-	}
-	else
-	{
-		fix_age=false;
-		std::cout<<"age\t\tnot fixed"<<std::endl;
-	}
-
-	//set vdisp 
-	if (config_map.count("fix_vdisp")==1)
-	{
-		fix_vdisp=true;
-		std::cout<<"vdisp\t\tfixed"<<std::endl;
-	}
-	else
-	{
-		fix_vdisp=false;
-		std::cout<<"vdisp\t\tnot fixed"<<std::endl;
-	}
-	std::cout<<"\n";	
 
 	return 0;
 }
@@ -219,15 +101,13 @@ int sps_mcmc::fix_params()
 //in the markov chain
 //
 //opt acc is the optimal acceptace ratio
-//
-//ok
 int sps_mcmc::change_params(double opt_acc)
 {
 	//error variable
 	int status=0;
 
 	//control the step size
-	//better control mechanism should be used
+	//better control mechanism should be used (PID)
 	if(acc_ratio.size()>1 && iter%200==1 && iter>3 )
 	{
 		if (acc_ratio[acc_ratio.size()-1]>opt_acc && sigma < 0.5)
@@ -247,6 +127,8 @@ int sps_mcmc::change_params(double opt_acc)
 	}
 
 
+
+
 	//create jump
 
 	//intialize normal distribution random generator
@@ -254,70 +136,46 @@ int sps_mcmc::change_params(double opt_acc)
 	do{
 		status=0;
 
-		//creating normal distribution random jump
-		if (fix_dust_tau_v==false)
-			d_dust_tau_v= dust_tau_v * distribution(generator);
-		else
-			d_dust_tau_v=0;
-		dust_tau_v+=d_dust_tau_v;
+		//create step
+		for (auto& param : parameters)
+		{
+			if (fix_parameters[param.first]==false)
+				steps[param.first] = param.second * distribution(generator);
+			else
+				steps[param.first] = 0;
 
-		if (fix_dust_mu==false)
-			d_dust_mu= dust_mu * distribution(generator) ;
-		else
-			d_dust_mu=0;
-		dust_mu+=d_dust_mu;
-
-		if (fix_sfr_tau==false)
-			d_sfr_tau= sfr_tau *  distribution(generator) ;
-		else
-			d_sfr_tau=0;
-		sfr_tau+=d_sfr_tau;
-
-		if (fix_age==false)
-			d_age= age *  distribution(generator) ;
-		else
-			d_age=0;
-		age+=d_age;
-
-		if (fix_metall==false)
-			d_metall= metall * distribution(generator) ;
-		else
-			d_metall=0;
-		metall+=d_metall;
-
-		if (fix_vdisp==false)
-			d_vdisp= vdisp * distribution(generator) ;
-		else
-			d_vdisp=0;
-		vdisp+=d_vdisp;
+			param.second += steps[param.first];
+		}
 
 		//check boundaries
-		//should be in config file
-		if(	dust_mu <=0 || dust_mu >1 || 
-			dust_tau_v <0 || dust_tau_v>1.5 ||
-			age<1e+8 || age>2e+10 ||
-			sfr_tau>40e+19	|| sfr_tau<=1e+7 || 
-			metall<0.0001 || metall>0.05 || 
-			vdisp > 0.002)
-			
+		for (auto& param : parameters)
 		{
-			dust_tau_v-=d_dust_tau_v;
-			dust_mu-=d_dust_mu;
-			sfr_tau-=d_sfr_tau;
-			age-=d_age;
-			metall-=d_metall;
-			vdisp-=d_vdisp;
-
-			status=1;
+			if (	param.second < param_lower_bound[param.first] ||
+				param.second > param_upper_bound[param.first] )
+			{
+				//std::cout<<"Warning, boundary reached: "<< param.first<< "\t"<<param.second<<std::endl;
+				status=1;
+			}
 		}
+
+		//if boundary reached step back	
+		if (status==1)
+		{
+			for (auto& param : parameters)
+			{
+				param.second -= steps[param.first];
+			}
+		}
+
+	//repeat until acceptable step is created
 	}while(status==1);
 
 
 	return status;
 }
 
-//
-//ok
+//evaluate the chi (P) parameters, with Metropolis-Hastings
+//should change cryptic acceptance codes
 int sps_mcmc::evaluate_chi(double input_chi)
 {
 	chi=input_chi;
@@ -343,11 +201,9 @@ int sps_mcmc::evaluate_chi(double input_chi)
 }
 
 
-//this function is called in everz iteration and records 
+//this function is called in every iteration and records 
 //the parameter values in the step, and the accceptance rate
 //and other diagnostic data
-//
-//ok
 int sps_mcmc::record_data()
 {
 	int status=0;
@@ -383,39 +239,46 @@ int sps_mcmc::record_data()
 		//a bit different histograms
 		std::vector<double> temp_point;
 		temp_point.resize(6);
+	
+		/*int i=0;
+		for (auto& param : parameters)
+		{
+			temp_point[i] = param.second;
+			i++;
+		}
+		*/
+	
+		//this is hardcoded beacause of the too simple
+		//plotting tool, but this is lame
+		//plotter should be changed 
+		temp_point[0]=parameters["dust_tau_v"];
+		temp_point[1]=parameters["dust_mu"];
+		temp_point[2]=parameters["sfr_tau"];
+		temp_point[3]=parameters["age"];
+		temp_point[4]=parameters["metall"];
+		temp_point[5]=parameters["vdisp"];
 
-		temp_point[0]=dust_tau_v;
-		temp_point[1]=dust_mu;
-		temp_point[2]=sfr_tau;
-		temp_point[3]=age;
-		temp_point[4]=metall;
-		temp_point[5]=vdisp;
-		if(burnin_ended)
+		//now it prints all steps, burn in too!!!!
+		//if(burnin_ended)
 			points.push_back(temp_point); 
 		
 	}
 	else //not accepted
 	{
-		dust_tau_v-=d_dust_tau_v;
-		dust_mu-=d_dust_mu;
-		sfr_tau-=d_sfr_tau;
-		age-=d_age;
-		metall-=d_metall;
-		vdisp-=d_vdisp;
+		//step back
+		for (auto& param : parameters)
+			param.second -= steps[param.first];
+		
 		out_acc_chi_evol.push_back(0);
 		acc.push_back(0);
 	}
 
 	if (accepted==0) //the best chi 
 	{
+		for (auto& param : parameters)
+			best_parameters[param.first] = param.second;
+		
 		best_chi=chi;
-		best_dust_tau_v=dust_tau_v;
-		best_dust_mu=dust_mu;
-		best_sfr_tau=sfr_tau;
-		best_age=age;
-		best_metall=metall;
-		best_vdisp=vdisp;
-					
 	}
 
 	if(accepted==2 || accepted==3) //worse step
@@ -430,7 +293,7 @@ int sps_mcmc::record_data()
 
 	//counting average values
 
-	//count some average values
+	//count some average values for diagnostics
 	if(iter%200==0)
 	{
 		double mean=0;
@@ -465,28 +328,30 @@ int sps_mcmc::record_data()
 	return 0;
 }
 
-//
-//ok
+
+
 int sps_mcmc::write_results()
 {
+	//write point evolutions
 	write_table_row(points,"../output/points.dat");
 
+	//write diagnostic data
 	write_vector(out_chi_evol,"../output/chi_evol.txt");
 	write_vector(out_best_chi_evol,"../output/best_chi_evol.txt");
 	write_vector(out_acc_chi_evol,"../output/acc_chi_evol.txt");
 	write_vector(worse_acc_ratio,"../output/worse-acc-rate.dat");
 	write_vector(acc_ratio,"../output/acc-rate.dat");
 	write_vector(worse_rate,"../output/worse-rate.dat");
-	
-	std::cout<<"\nbest params:\n\n";
-	std::cout<<"dust_tau_v="<<best_dust_tau_v<<std::endl;
-	std::cout<<"dust_mu="<<best_dust_mu<<std::endl;
-	std::cout<<"sfr_tau="<<best_sfr_tau<<std::endl;
-	std::cout<<"age="<<best_age<<std::endl;
-	std::cout<<"metall="<<best_metall<<std::endl;
-	std::cout<<"veloc_disp="<<best_vdisp<<std::endl;
-	std::cout<<"chisquare="<<best_chi<<std::endl;
 
+
+	//report to stdout	
+	std::cout<<"\nbest params:\n\n";
+	for (auto& param : parameters)
+		std::cout<<param.first<<"\t=\t"<<param.second<<std::endl;
+	std::cout<<"log(P)\t~\t"<<best_chi<<std::endl;
+
+
+	//create fitted param file
 	std::ofstream outfile("../output/fitted-params.dat");
 	//Checking filename
 	if(!(outfile))
@@ -494,16 +359,10 @@ int sps_mcmc::write_results()
 		std::cout<<"ERROR INVALID OUTPUT FILE: ../output/fitted-params.dat"<<std::endl;
 		return 1;
 	}
-
 	outfile<<"best params:\n \n";
-	outfile<<"dust_tau_v="<<best_dust_tau_v<<std::endl;
-	outfile<<"dust_mu="<<best_dust_mu<<std::endl;
-	outfile<<"sfr_tau="<<best_sfr_tau<<std::endl;
-	outfile<<"age="<<best_age<<std::endl;
-	outfile<<"metall="<<best_metall<<std::endl;
-	outfile<<"veloc_disp="<<best_vdisp<<std::endl;
+	for (auto& param : parameters)
+		outfile<<param.first<<"\t=\t"<<param.second<<std::endl;
 	outfile<<"log(P)="<<best_chi<<std::endl;
-	
 	outfile.close();
 
 	//info out

@@ -45,8 +45,11 @@ int main(int argc, char* argv[])
 	//test config read
 	if(argc==3)
 	{
+		//initializing parameters in mcmc module
 		mcmc_fitter.read_config(argv[1]);
+		std::cout<<"config file read"<<std::endl;
 		MAXITER=atoi(argv[2]);
+		
 		
 	}
 	else
@@ -57,13 +60,6 @@ int main(int argc, char* argv[])
 		std::cerr<<"\n\t 2. command line argument is number of iterations (recommended: 40000)"<<std::endl;
 		return 1;
 	}
-
-	//set ininital parameter guesses read
-	//from the config file above
-	mcmc_fitter.set_initial_params();
-	//fix parameters if asked to
-	mcmc_fitter.fix_params();
-
 
 	//resampling models
 	fitter.resample_models_2_mes(model);
@@ -91,13 +87,14 @@ int main(int argc, char* argv[])
 		if(error!=0)
 			break;
 
+		//more error checking
 		error=fitter.set_params(
-				mcmc_fitter.dust_tau_v,
-				mcmc_fitter.dust_mu,
-				mcmc_fitter.sfr_tau,
-				mcmc_fitter.age,
-				mcmc_fitter.metall,
-				mcmc_fitter.vdisp);
+				mcmc_fitter.parameters["dust_tau_v"],
+				mcmc_fitter.parameters["dust_mu"],
+				mcmc_fitter.parameters["sfr_tau"],
+				mcmc_fitter.parameters["age"],
+				mcmc_fitter.parameters["metall"],
+				mcmc_fitter.parameters["vdisp"]	);
 
 		error=fitter.change_kernel_params();
 		if(error!=0)
