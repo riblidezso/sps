@@ -48,7 +48,7 @@ $(ODIR)/sps_read.o : $(SRC)/sps_read.cpp $(IDIR)/sps_read.h
 
 
 #Building fitter
-$(BIN)/fit_sdss : $(ODIR)/main_fit_sdss.o $(ODIR)/opencl_fit_w_err.o $(ODIR)/sps_read.o  $(ODIR)/sps_write.o
+$(BIN)/fit_sdss : $(ODIR)/main_fit_sdss.o $(ODIR)/opencl_fit_w_err.o $(ODIR)/sps_mcmc.o $(ODIR)/sps_read.o  $(ODIR)/sps_write.o
 	$(LINK) -o $@ $^ $(LIBOPENCL) 
 
 $(ODIR)/main_fit_sdss.o : $(SRC)/main_fit_sdss.cpp
@@ -58,6 +58,8 @@ $(ODIR)/main_fit_sdss.o : $(SRC)/main_fit_sdss.cpp
 $(ODIR)/opencl_fit_w_err.o : $(SRC)/opencl_fit_w_err.cpp $(IDIR)/opencl_fit_w_err.h
 	$(CXX) -c -o  $@ $< $(CXXFLAGS) $(LIBOPENCL)
 
+$(ODIR)/sps_mcmc.o : $(SRC)/sps_mcmc.cpp $(IDIR)/sps_mcmc.h 
+	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
 
 $(ODIR)/sps_read.o : $(SRC)/sps_read.cpp $(IDIR)/sps_read.h 
 	$(CXX) -c -o  $@ $< $(CXXFLAGS) 

@@ -1,8 +1,8 @@
 #!/bin/bash
 
-rm -r plots
-mkdir plots
-cd plots
+rm -r plots-gnuplot
+mkdir plots-gnuplot
+cd plots-gnuplot
 
 echo plotting fit...
 gnuplot ../gnuplot_scripts/fit.plt
