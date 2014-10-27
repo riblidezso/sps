@@ -96,6 +96,7 @@ int main(int argc, char* argv[])
 				mcmc_fitter.parameters["metall"],
 				mcmc_fitter.parameters["vdisp"]	);
 
+
 		error=fitter.change_kernel_params();
 		if(error!=0)
 			break;

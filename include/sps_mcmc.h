@@ -68,14 +68,24 @@ public:
 	//burnin indicator
 	bool burnin_ended;
 
-	//step size
-	double sigma;
-
 	//maps for parameters
 	std::map<std::string,double> parameters;
 	std::map<std::string,double> best_parameters;
+
+	//maps for controlling step sizes	
 	std::map<std::string,double> steps;
+	std::map<std::string,double> sigmas;
+	std::map<std::string,std::vector<double> > sigmas_evol;
+	std::map<std::string,std::vector<double> > acc_s;
+	std::map<std::string,std::vector<double> > acc_ratio_s;
+	//an iterator which tells the changer subroutine
+	//wich parameter to change
+	std::map<std::string,double>::iterator param_iter;
+	//an iterator to help it
+	int change_iter;
+
 	std::map<std::string,bool> fix_parameters;
+
 	std::map<std::string,double> param_upper_bound;
 	std::map<std::string,double> param_lower_bound;
 

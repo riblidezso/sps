@@ -13,10 +13,7 @@ sps_mcmc::sps_mcmc()
 	//burnin indicator
 	burnin_ended=false;
 
-	//initial sigma parameter of the normal distribution
-	// of steps is the markov chain
-	// the step is relative so it is 0.8% now
-	sigma=0.008;
+	change_iter=0;
 }
 
 
@@ -46,6 +43,14 @@ int sps_mcmc::read_config(std::string input_filename)
 				best_parameters.insert(std::pair<std::string,double> (tempvec[1],atof(tempvec[2].c_str())));
 				parameter_evol.insert(std::pair<std::string,std::vector<double> > (tempvec[1],{}));
 				steps.insert(std::pair<std::string,double> (tempvec[1],0));
+
+				//stuff for controlling step size
+				//this might be in some advanced config file
+				//initial step size hardcoded!!!!
+				sigmas.insert(std::pair<std::string,double> (tempvec[1],0.008));
+				sigmas_evol.insert(std::pair<std::string,std::vector<double> > (tempvec[1],{}));
+				acc_s.insert(std::pair<std::string,std::vector<double> > (tempvec[1],{}));
+				acc_ratio_s.insert(std::pair<std::string,std::vector<double> > (tempvec[1],{}));
 			}	
 	
 			//parameter boundaries
@@ -73,6 +78,8 @@ int sps_mcmc::read_config(std::string input_filename)
 	}
 	infile.close();
 
+	//initialize parameter iterator
+	param_iter=parameters.begin();
 
 	//print info
 	std::cout<<"\n\nInitial parameters guesses:"<<std::endl;
@@ -107,71 +114,86 @@ int sps_mcmc::change_params(double opt_acc)
 	//error variable
 	int status=0;
 
+	///////////////////////////////////////////////////
 	//control the step size
+	///////////////////////////////////////////////////
+
 	//better control mechanism should be used (PID)
-	if(acc_ratio.size()>1 && iter%200==1 && iter>3 )
+	for (auto& param : acc_ratio_s)
 	{
-		if (acc_ratio[acc_ratio.size()-1]>opt_acc && sigma < 0.5)
-			sigma=sigma+sigma*(acc_ratio[acc_ratio.size()-1]-opt_acc);
-		
-		if (acc_ratio[acc_ratio.size()-1]<opt_acc)
-			sigma=sigma-sigma*(opt_acc-acc_ratio[acc_ratio.size()-1]);
-
-		//std::cout<<"\n acc_rate="<<acc_ratio[acc_ratio.size()-1]<<"\n";
+		if( param.second.size()>1 && iter%1200==1 && iter>3 )
+		{
+			if (param.second[param.second.size()-1]>opt_acc && sigmas[param.first] < 0.5)
+				sigmas[param.first]=sigmas[param.first]+sigmas[param.first]*(param.second[param.second.size()-1]-opt_acc);
+			
+			if (param.second[param.second.size()-1]<opt_acc)
+				sigmas[param.first]=sigmas[param.first]+sigmas[param.first]*(param.second[param.second.size()-1]-opt_acc);
+	
+		}
+		sigmas_evol[param.first].push_back(sigmas[param.first]);
 	}
-
-	//this should not happen	
+	
+/*	//this should not happen	
 	if(sigma<0)
 	{
 		std::cout<<"ERROR sigma < 0";
 		return 1;
 	}
+*/
 
 
+	///////////////////////////////////////////////////
+	//create jump	
+	///////////////////////////////////////////////////
 
 
-	//create jump
+	//choose parameter to change
+
+	int noparams=parameters.size();
+	//iterates parameters in a loop until 
+	//it finds a paramteres that is not fixed
+	do{ 
+		if ( change_iter % noparams == 0 )
+			param_iter=parameters.begin();
+		else
+			++param_iter;
+	
+		change_iter++;
+	
+	}while (fix_parameters[param_iter->first]==true);
+	//std::cout<<"parameter chosen is "<<param_iter->first<<std::endl;
+
+
+	//jump
 
 	//intialize normal distribution random generator
-	std::normal_distribution<double> distribution(0,sigma);
+	std::normal_distribution<double> distribution(0,sigmas[param_iter->first]);
 	do{
 		status=0;
 
-		//create step
-		for (auto& param : parameters)
-		{
-			if (fix_parameters[param.first]==false)
-				steps[param.first] = param.second * distribution(generator);
-			else
-				steps[param.first] = 0;
-
-			param.second += steps[param.first];
-		}
+		//create step 
+		steps[param_iter->first] = param_iter->second * distribution(generator);
+		//add
+		param_iter->second += steps[param_iter->first];
 
 		//check boundaries
-		for (auto& param : parameters)
+		if (	param_iter->second < param_lower_bound[param_iter->first] ||
+			param_iter->second > param_upper_bound[param_iter->first] )
 		{
-			if (	param.second < param_lower_bound[param.first] ||
-				param.second > param_upper_bound[param.first] )
-			{
-				//std::cout<<"Warning, boundary reached: "<< param.first<< "\t"<<param.second<<std::endl;
-				status=1;
-			}
+			//std::cout<<"Warning, boundary reached: "<< param.first<< "\t"<<param.second<<std::endl;
+			status=1;
 		}
 
 		//if boundary reached step back	
 		if (status==1)
-		{
-			for (auto& param : parameters)
-			{
-				param.second -= steps[param.first];
-			}
-		}
+			param_iter->second -= steps[param_iter->first];
+	
 
 	//repeat until acceptable step is created
 	}while(status==1);
 
-
+	
+	//std::cout<<"step succesfully generated "<<std::endl;
 	return status;
 }
 
@@ -179,6 +201,7 @@ int sps_mcmc::change_params(double opt_acc)
 //should change cryptic acceptance codes
 int sps_mcmc::evaluate_chi(double input_chi)
 {
+//	std::cout<<"chi arrived"<<std::endl;
 	chi=input_chi;
 
 	//evaluating chi
@@ -231,7 +254,8 @@ int sps_mcmc::record_data()
 	{
 		chi_before=chi;
 		out_acc_chi_evol.push_back(chi);
-		acc.push_back(1);
+		//acc.push_back(1);
+		acc_s[param_iter->first].push_back(1);
 
 		//record temp data to parameter chain
 		//now i do not record points arter
@@ -249,11 +273,13 @@ int sps_mcmc::record_data()
 	else //not accepted
 	{
 		//step back
-		for (auto& param : parameters)
-			param.second -= steps[param.first];
+		param_iter->second -= steps[param_iter->first];
+		//for (auto& param : parameters)
+		//	param.second -= steps[param.first];
 		
 		out_acc_chi_evol.push_back(0);
-		acc.push_back(0);
+		//acc.push_back(0);
+		acc_s[param_iter->first].push_back(0);
 	}
 
 	if (accepted==0) //the best chi 
@@ -297,14 +323,17 @@ int sps_mcmc::record_data()
 			worse_rate.push_back(mean/100);
 		}
 	
-		mean=0;
 
-		if (acc.size()>100)
+		for (auto& param : acc_s )
 		{
-			for(int i=0;i<100;i++)
-				mean+=acc[acc.size()-100+i];
-				
-			acc_ratio.push_back(mean/100);
+			mean=0;
+			if (param.second.size()>100)
+			{
+				for(int i=0;i<100;i++)
+					mean+=param.second[param.second.size()-100+i];
+					
+				acc_ratio_s[param.first].push_back(mean/100);
+			}
 		}
 	}
 
@@ -319,12 +348,20 @@ int sps_mcmc::write_results()
 	for (auto& param : parameter_evol)
 		write_vector(param.second,"../output/"+param.first+".dat");
 
+	//write acc_rates
+	for (auto& param : acc_ratio_s)
+		write_vector(param.second,"../output/acc_ratios_"+param.first+".dat");
+
+	//write sigmas 
+	for (auto& param : sigmas_evol)
+		write_vector(param.second,"../output/sigmas_evol_"+param.first+".dat");
+
 	//write diagnostic data
 	write_vector(out_chi_evol,"../output/chi_evol.txt");
 	write_vector(out_best_chi_evol,"../output/best_chi_evol.txt");
-	write_vector(out_acc_chi_evol,"../output/acc_chi_evol.txt");
+//	write_vector(out_acc_chi_evol,"../output/acc_chi_evol.txt");
 	write_vector(worse_acc_ratio,"../output/worse-acc-rate.dat");
-	write_vector(acc_ratio,"../output/acc-rate.dat");
+//	write_vector(acc_ratio,"../output/acc-rate.dat");
 	write_vector(worse_rate,"../output/worse-rate.dat");
 
 
@@ -351,6 +388,7 @@ int sps_mcmc::write_results()
 
 	//info out
 	std::cout<<"writing succesful: "<<std::endl;
+
 	return 0;
 }
 
