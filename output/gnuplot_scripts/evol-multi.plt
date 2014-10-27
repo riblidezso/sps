@@ -25,7 +25,7 @@ set tmargin topmargin
 set bmargin botmargin
 
 set ylabel "Z"
-p "../points.dat" u 5 w l title "metallicity evolution"
+p "../metall.dat" u 1 w l title "metallicity evolution"
 
 
 #TOP RIGHT
@@ -36,7 +36,7 @@ set lmargin cmargin
 set rmargin lrmargin
 
 set ylabel "{/Symbol m}"
-p "../points.dat" u 2 w l   title "{/Symbol m} evolution"
+p "../dust_mu.dat" u 1 w l   title "{/Symbol m} evolution"
 
 #CENTER LEFT
 set size 0.5,1.0/3.0
@@ -46,7 +46,7 @@ set lmargin lrmargin
 set rmargin cmargin
 
 set ylabel "{/Symbol t}_v"
-p "../points.dat" u 1 w l  title "{/Symbol t}_v evolution" 
+p "../dust_tau_v.dat" u 1 w l  title "{/Symbol t}_v evolution" 
 
 #CENTER RIGHT 
 set size 0.5,1.0/3.0
@@ -56,7 +56,7 @@ set lmargin cmargin
 set rmargin lrmargin
 
 set ylabel "age [Gyrs]"
-p "../points.dat" u ($4)/(10**9) w l  title "age evolution"
+p "../age.dat" u ($1)/(10**9) w l  title "age evolution"
 
 #BOTTOM LEFT
 
@@ -67,18 +67,18 @@ set lmargin lrmargin
 set rmargin cmargin
 
 set ylabel "{/Symbol t} [Gyrs]"
-p "../points.dat" u ($3)/(10**9) w l title "{/Symbol t} evolution"
+p "../sfr_tau.dat" u ($1)/(10**9) w l title "{/Symbol t} evolution"
 
 #BOTTOM RIGHT
 
-set size 0.5,1.0/3.0
-set origin 0.5,0
+#set size 0.5,1.0/3.0
+#set origin 0.5,0
 
-set lmargin cmargin
-set rmargin lrmargin
+#set lmargin cmargin
+#set rmargin lrmargin
 
-set ylabel "{/Symbol m} x {/Symbol t}_v"
-p "../points.dat" u ($2*$1) w l title "{/Symbol m} x {/Symbol t}_v evolution"
+#set ylabel "{/Symbol m} x {/Symbol t}_v"
+#p "../points.dat" u ($2*$1) w l title "{/Symbol m} x {/Symbol t}_v evolution"
 
 
 unset multiplot

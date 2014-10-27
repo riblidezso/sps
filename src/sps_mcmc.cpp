@@ -44,6 +44,7 @@ int sps_mcmc::read_config(std::string input_filename)
 			{
 				parameters.insert(std::pair<std::string,double> (tempvec[1],atof(tempvec[2].c_str())));
 				best_parameters.insert(std::pair<std::string,double> (tempvec[1],atof(tempvec[2].c_str())));
+				parameter_evol.insert(std::pair<std::string,std::vector<double> > (tempvec[1],{}));
 				steps.insert(std::pair<std::string,double> (tempvec[1],0));
 			}	
 	
@@ -237,30 +238,12 @@ int sps_mcmc::record_data()
 		//rejected step
 		//that might would result in 
 		//a bit different histograms
-		std::vector<double> temp_point;
-		temp_point.resize(6);
-	
-		/*int i=0;
-		for (auto& param : parameters)
-		{
-			temp_point[i] = param.second;
-			i++;
-		}
-		*/
-	
-		//this is hardcoded beacause of the too simple
-		//plotting tool, but this is lame
-		//plotter should be changed 
-		temp_point[0]=parameters["dust_tau_v"];
-		temp_point[1]=parameters["dust_mu"];
-		temp_point[2]=parameters["sfr_tau"];
-		temp_point[3]=parameters["age"];
-		temp_point[4]=parameters["metall"];
-		temp_point[5]=parameters["vdisp"];
 
+		//push back parameter to evolution vector	
 		//now it prints all steps, burn in too!!!!
 		//if(burnin_ended)
-			points.push_back(temp_point); 
+			for (auto& param : parameter_evol)
+				param.second.push_back(parameters[param.first]); 
 		
 	}
 	else //not accepted
@@ -333,7 +316,8 @@ int sps_mcmc::record_data()
 int sps_mcmc::write_results()
 {
 	//write point evolutions
-	write_table_row(points,"../output/points.dat");
+	for (auto& param : parameter_evol)
+		write_vector(param.second,"../output/"+param.first+".dat");
 
 	//write diagnostic data
 	write_vector(out_chi_evol,"../output/chi_evol.txt");

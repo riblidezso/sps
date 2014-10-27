@@ -58,15 +58,12 @@ public:
 	std::vector<double> worse_acc;		//stores the last some worse accept or nots (0,1)
 	std::vector<double> worse_acc_ratio;	// stores averaged worse acceptance rates
 
+
 	//random generator
 	std::default_random_engine generator;
 
-
 	//indicating acceptance
 	int accepted;
-
-	//all the points in the markov chain
-	std::vector< std::vector <double> > points;
 
 	//burnin indicator
 	bool burnin_ended;
@@ -81,6 +78,9 @@ public:
 	std::map<std::string,bool> fix_parameters;
 	std::map<std::string,double> param_upper_bound;
 	std::map<std::string,double> param_lower_bound;
+
+	//map for parameter evolution
+	std::map<std::string,std::vector<double> > parameter_evol;
 };
 
 #endif
