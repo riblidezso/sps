@@ -83,7 +83,11 @@ int main(int argc, char* argv[])
 	// fitting 
 	for(mcmc_fitter.iter= 0; mcmc_fitter.iter<(MAXITER);mcmc_fitter.iter++)
 	{
-		error=mcmc_fitter.change_params(0.3);
+		error=mcmc_fitter.control_step_size(0.5);
+		if(error!=0)
+			break;
+
+		error=mcmc_fitter.change_params();
 		if(error!=0)
 			break;
 

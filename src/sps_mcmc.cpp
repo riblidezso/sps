@@ -46,8 +46,8 @@ int sps_mcmc::read_config(std::string input_filename)
 
 				//stuff for controlling step size
 				//this might be in some advanced config file
-				//initial step size hardcoded!!!!
-				sigmas.insert(std::pair<std::string,double> (tempvec[1],0.008));
+				//initial step size hardcoded 
+				sigmas.insert(std::pair<std::string,double> (tempvec[1],0.2));
 				sigmas_evol.insert(std::pair<std::string,std::vector<double> > (tempvec[1],{}));
 				acc_s.insert(std::pair<std::string,std::vector<double> > (tempvec[1],{}));
 				acc_ratio_s.insert(std::pair<std::string,std::vector<double> > (tempvec[1],{}));
@@ -104,48 +104,116 @@ int sps_mcmc::read_config(std::string input_filename)
 }
 
 
+//opt acc is the optimal acceptace ratio
+int sps_mcmc::control_step_size(double opt_acc)
+{
+
+	int control_window=500;
+	///////////////////////////////////////////////////
+	//counting average values
+	///////////////////////////////////////////////////
+
+	//the equality is not neccesary
+	int int_window=control_window;
+
+	//count some average values for diagnostics
+	if(iter%control_window==1 && iter>int_window)
+	{
+		double mean=0;
+		if (worse_acc.size()>int_window)
+		{
+			for(int i=0;i<int_window;i++)
+				mean+=worse_acc[worse_acc.size()-int_window+i];
+
+			worse_acc_ratio.push_back(mean/int_window);
+		}
+
+		mean=0;
+		if (worse.size()>int_window)
+		{
+			for(int i=0;i<int_window;i++)
+				mean+=worse[worse.size()-int_window+i];
+
+			worse_rate.push_back(mean/int_window);
+		}
+	
+
+		for (auto& param : acc_s )
+		{
+			mean=0;
+			if (param.second.size()>int_window)
+			{
+				for(int i=0;i<int_window;i++)
+					mean+=param.second[param.second.size()-int_window+i];
+				acc_ratio_s[param.first].push_back(mean/int_window);
+			}
+		}
+	}
+
+
+	///////////////////////////////////////////////////
+	//control the step size
+	///////////////////////////////////////////////////
+	//control mechanism is now pure proportional
+	//integral just makes stability worse
+	//differential is said to be hard to do right
+
+	for (auto& param : acc_ratio_s)
+	{
+		//if( param.second.size()>1 && iter%200==1 && iter>3 )
+		if( param.second.size()>1 && iter%control_window==1 && iter>3 )
+		{
+			double weigth_prop=0.6;
+			//weigth int is 0, means no integral control!!
+			double weigth_int=0;
+			double weigth_all=1;
+
+			//proportional error value
+			double prop_err=param.second[param.second.size()-1]-opt_acc;
+
+			//calculate integral error value
+			double int_err=0;
+			for(int i=100;i<param.second.size();i++)
+				int_err+=(param.second[i]-opt_acc);
+
+
+			//modify control variable
+			//now there is the scale of the control var
+			sigmas[param.first]+=weigth_all*sigmas[param.first]*(weigth_prop*prop_err+weigth_int*int_err);
+
+			//this should not happen	
+			if(sigmas[param.first]>1)
+			{
+				std::cout<<"WARNING sigma > 1";
+			}
+
+			//this should not happen	
+			if(sigmas[param.first]<0)
+			{
+				std::cout<<"ERROR sigma < 0";
+				return 1;
+			}
+		}
+		//record the sigma for diagnostics
+		sigmas_evol[param.first].push_back(sigmas[param.first]);
+	}
+	
+
+	return 0;
+}
+
+
 //change parameters
 //this will be called at every iteration
 //in the markov chain
-//
-//opt acc is the optimal acceptace ratio
-int sps_mcmc::change_params(double opt_acc)
+int sps_mcmc::change_params()
 {
 	//error variable
 	int status=0;
 
 	///////////////////////////////////////////////////
-	//control the step size
-	///////////////////////////////////////////////////
-
-	//better control mechanism should be used (PID)
-	for (auto& param : acc_ratio_s)
-	{
-		if( param.second.size()>1 && iter%1200==1 && iter>3 )
-		{
-			if (param.second[param.second.size()-1]>opt_acc && sigmas[param.first] < 0.5)
-				sigmas[param.first]=sigmas[param.first]+sigmas[param.first]*(param.second[param.second.size()-1]-opt_acc);
-			
-			if (param.second[param.second.size()-1]<opt_acc)
-				sigmas[param.first]=sigmas[param.first]+sigmas[param.first]*(param.second[param.second.size()-1]-opt_acc);
-	
-		}
-		sigmas_evol[param.first].push_back(sigmas[param.first]);
-	}
-	
-/*	//this should not happen	
-	if(sigma<0)
-	{
-		std::cout<<"ERROR sigma < 0";
-		return 1;
-	}
-*/
-
-
-	///////////////////////////////////////////////////
 	//create jump	
 	///////////////////////////////////////////////////
-
 
 	//choose parameter to change
 
@@ -187,12 +255,10 @@ int sps_mcmc::change_params(double opt_acc)
 		//if boundary reached step back	
 		if (status==1)
 			param_iter->second -= steps[param_iter->first];
-	
 
 	//repeat until acceptable step is created
 	}while(status==1);
 
-	
 	//std::cout<<"step succesfully generated "<<std::endl;
 	return status;
 }
@@ -254,7 +320,6 @@ int sps_mcmc::record_data()
 	{
 		chi_before=chi;
 		out_acc_chi_evol.push_back(chi);
-		//acc.push_back(1);
 		acc_s[param_iter->first].push_back(1);
 
 		//record temp data to parameter chain
@@ -274,11 +339,8 @@ int sps_mcmc::record_data()
 	{
 		//step back
 		param_iter->second -= steps[param_iter->first];
-		//for (auto& param : parameters)
-		//	param.second -= steps[param.first];
 		
 		out_acc_chi_evol.push_back(0);
-		//acc.push_back(0);
 		acc_s[param_iter->first].push_back(0);
 	}
 
@@ -299,44 +361,6 @@ int sps_mcmc::record_data()
 		worse_acc.push_back(1);
 	if(accepted==3) //worse and not accepted
 		worse_acc.push_back(0);
-
-	//counting average values
-
-	//count some average values for diagnostics
-	if(iter%200==0)
-	{
-		double mean=0;
-		if (worse_acc.size()>100)
-		{
-			for(int i=0;i<100;i++)
-				mean+=worse_acc[worse_acc.size()-100+i];
-
-			worse_acc_ratio.push_back(mean/100);
-		}
-
-		mean=0;
-		if (worse.size()>100)
-		{
-			for(int i=0;i<100;i++)
-				mean+=worse[worse.size()-100+i];
-
-			worse_rate.push_back(mean/100);
-		}
-	
-
-		for (auto& param : acc_s )
-		{
-			mean=0;
-			if (param.second.size()>100)
-			{
-				for(int i=0;i<100;i++)
-					mean+=param.second[param.second.size()-100+i];
-					
-				acc_ratio_s[param.first].push_back(mean/100);
-			}
-		}
-	}
-
 	return 0;
 }
 
@@ -357,9 +381,9 @@ int sps_mcmc::write_results()
 		write_vector(param.second,"../output/sigmas_evol_"+param.first+".dat");
 
 	//write diagnostic data
-	write_vector(out_chi_evol,"../output/chi_evol.txt");
-	write_vector(out_best_chi_evol,"../output/best_chi_evol.txt");
-//	write_vector(out_acc_chi_evol,"../output/acc_chi_evol.txt");
+	write_vector(out_chi_evol,"../output/chi_evol.dat");
+	write_vector(out_best_chi_evol,"../output/best_chi_evol.dat");
+//	write_vector(out_acc_chi_evol,"../output/acc_chi_evol.dat");
 	write_vector(worse_acc_ratio,"../output/worse-acc-rate.dat");
 //	write_vector(acc_ratio,"../output/acc-rate.dat");
 	write_vector(worse_rate,"../output/worse-rate.dat");

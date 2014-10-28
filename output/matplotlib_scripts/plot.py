@@ -16,7 +16,7 @@ params["age"]=numpy.array(pandas.read_csv("age.dat"))
 params["metall"]=numpy.array(pandas.read_csv("metall.dat"))
 params["vdisp"]=numpy.array(pandas.read_csv("vdisp.dat"))
 
-fit=numpy.array(pandas.read_csv("fit.txt",delimiter=" "))
+fit=numpy.array(pandas.read_csv("fit.dat",delimiter=" "))
 
 fig=plt.figure()
 #fig.set_size_inches([7,4])
@@ -76,7 +76,7 @@ for param1 in params:
 #plot parameter histograms 
 ########################################
 N=numpy.float32(len(params["vdisp"]))
-nbins=numpy.float32(40)
+nbins=numpy.float32(60)
 
 for param in params:
 	binsize=(numpy.amax(params[param])-numpy.amin(params[param]))/nbins

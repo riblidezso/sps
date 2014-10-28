@@ -629,7 +629,7 @@ int opencl_fit_w_err::write_fit_result()
 	output.push_back(result);
 
 	//functions from sps_write 
-	write_table_col(output,"../output/fit.txt");
+	write_table_col(output,"../output/fit.dat");
 
 	//info out
 	std::cout<<"fit writing succesful: "<<std::endl;

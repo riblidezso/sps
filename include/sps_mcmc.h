@@ -22,7 +22,9 @@ public:
 	//config file read	
 	int read_config(std::string input_filename);
 
-	int change_params(double opt_acc);
+	int control_step_size(double opt_acc);
+
+	int change_params();
 
 	int evaluate_chi(double input_chi);
 

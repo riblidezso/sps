@@ -23,7 +23,7 @@ ax=fig.add_subplot(1,1,1)
 #plot parameter evolutions
 ########################################
 for param in params:
-	ax.plot(params[param])
+	ax.step(range(len(params[param])),params[param])
 	ax.set_xlabel("N")
 	ax.set_ylabel(param)
 	fig.savefig("plots-python/evol_"+param+".png",dpi=100)
