@@ -682,6 +682,8 @@ int opencl_fit_w_err::call_kernels()
 	}
 	factor=temp_1/temp_2;
 
+	std::cout<<"factor="<<factor<<std::endl;
+
 
 	//next kernel for chi
 	//Set kernel_chi_calc argument
