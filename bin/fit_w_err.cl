@@ -55,7 +55,8 @@ __kernel void spec_gen (
 /*convol*/
 
 	//part of dust exponent is constant for a wavel
-	exponent=pow(wavelengths[wave]/5500.0,-0.7);
+	//exponent=pow(wavelengths[wave]/5500.0,-0.7);
+	exponent=1.0;
 
 	float temp=0;
 	temp+= time[0] * model[wave] * exp((time[0]-age)/sfr_tau);
