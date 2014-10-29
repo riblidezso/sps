@@ -92,7 +92,8 @@ __kernel void spec_gen (
 
 	result_no_vel[wave]= temp*exp(-exponent*dust_tau_v) + temp1*exp(-exponent*dust_tau_v*dust_mu);
 	
-	result_no_vel[wave]= model_metal[modelno];
+	
+	//result_no_vel[wave]= model_metal[modelno];
 	return;
 }
 
