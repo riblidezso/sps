@@ -1,20 +1,17 @@
 #!/usr/bin/python
 
-#import modules pandas might not be necessary
-#it is just for really fast reading (more than 10x faster than numpy)
 
 import numpy
 import matplotlib.pyplot as plt
-import pandas
 
 #reading files
 params=dict()
-params["acc_ratios_dust_tau_v"]=numpy.array(pandas.read_csv("acc_ratios_dust_tau_v.dat"))
-params["acc_ratios_dust_mu"]=numpy.array(pandas.read_csv("acc_ratios_dust_mu.dat"))
-params["acc_ratios_sfr_tau"]=numpy.array(pandas.read_csv("acc_ratios_sfr_tau.dat"))
-params["acc_ratios_age"]=numpy.array(pandas.read_csv("acc_ratios_age.dat"))
-params["acc_ratios_metall"]=numpy.array(pandas.read_csv("acc_ratios_metall.dat"))
-params["acc_ratios_vdisp"]=numpy.array(pandas.read_csv("acc_ratios_vdisp.dat"))
+params["acc_ratios_dust_tau_v"]=numpy.loadtxt("acc_ratios_dust_tau_v.dat")
+params["acc_ratios_dust_mu"]=numpy.loadtxt("acc_ratios_dust_mu.dat")
+params["acc_ratios_sfr_tau"]=numpy.loadtxt("acc_ratios_sfr_tau.dat")
+params["acc_ratios_age"]=numpy.loadtxt("acc_ratios_age.dat")
+params["acc_ratios_metall"]=numpy.loadtxt("acc_ratios_metall.dat")
+params["acc_ratios_vdisp"]=numpy.loadtxt("acc_ratios_vdisp.dat")
 
 fig=plt.figure()
 ax=fig.add_subplot(1,1,1)
