@@ -314,7 +314,7 @@ int opencl_fit_w_err::opencl_initialize(std::string kernel_filename)
 	t1 = clock();
 
 	//Create context
-	context = clCreateContext(NULL,1, devices,NULL,NULL,&status);
+	context = clCreateContext(NULL,numDevices, devices,NULL,NULL,&status);
 	if (status!=0)
 	{
 		std::cerr<<"ERROR creating context: "<<status<<std::endl;
