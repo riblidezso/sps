@@ -55,8 +55,7 @@ __kernel void spec_gen (
 /*convol*/
 
 	//part of dust exponent is constant for a wavel
-	//exponent=pow(wavelengths[wave]/5500.0,-0.7);
-	exponent=1.0;
+	exponent=pow(wavelengths[wave]/5500.0,-0.7);
 
 	float temp=0;
 	temp+= time[0] * model[wave] * exp((time[0]-age)/sfr_tau);
@@ -80,6 +79,7 @@ __kernel void spec_gen (
 
 	result_no_vel[wave]= temp*exp(-exponent*dust_tau_v) + temp1*exp(-exponent*dust_tau_v*dust_mu);
 	
+	result_no_vel[wave]= model_metal[modelno+1]);
 	return;
 }
 
@@ -135,10 +135,9 @@ __kernel void mask_veloc_disp (
 //counting the factor with err
 	if ( mes_spec_mask[wave] == 0 && mes_spec_err[wave]!=0  ) //
 	{
-		factor1[wave]=  pow(2.0,1.0*exp(-2.0)); 
+		factor1[wave]=  result_no_vel[wave]; 
 		//factor1[wave]= (mes_spec[wave] * result[wave])  / (mes_spec_err[wave] * mes_spec_err[wave] );
-		factor2[wave]= 1.3;
-		//factor2[wave]= (result[wave] * result[wave] ); // / (mes_spec_err[wave] * mes_spec_err[wave]);
+		factor2[wave]= (result[wave] * result[wave] ); // / (mes_spec_err[wave] * mes_spec_err[wave]);
 	}
 	else 
 	{
