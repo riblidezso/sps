@@ -134,8 +134,8 @@ __kernel void mask_veloc_disp (
 //counting the factor with err
 	if ( mes_spec_mask[wave] == 0 && mes_spec_err[wave]!=0  ) //
 	{
-		factor1[wave]= (mes_spec[wave] * result[wave]) / (mes_spec_err[wave] * mes_spec_err[wave] );
-		factor2[wave]= (result[wave] * result[wave] ) / (mes_spec_err[wave] * mes_spec_err[wave]);
+		factor1[wave]= (mes_spec[wave]); // * result[wave])  / (mes_spec_err[wave] * mes_spec_err[wave] );
+		factor2[wave]= (result[wave] * result[wave] ); // / (mes_spec_err[wave] * mes_spec_err[wave]);
 	}
 	else 
 	{
