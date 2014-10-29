@@ -109,7 +109,7 @@ int main(int argc, char* argv[])
 		if(error!=0)
 			break;
 		
-		error=mcmc_fitter.evaluate_chi(fitter.chi);
+		error=mcmc_fitter.evaluate_chi((double) fitter.chi);
 		if(error!=0)
 			break;
 

@@ -55,21 +55,21 @@ public: //data
 	clock_t t1, t2;
 
 //measured spectrum containers
-	std::vector<double> mes_spec;
-	std::vector<double> mes_spec_err;
-	std::vector<double> mes_spec_mask;
-	std::vector<double> mes_spec_wavel;
+	std::vector<cl_float> mes_spec;
+	std::vector<cl_float> mes_spec_err;
+	std::vector<cl_float> mes_spec_mask;
+	std::vector<cl_float> mes_spec_wavel;
 	//size
 	size_t mes_nspecsteps;
 
 //data for generating spectra
 
 	//stores the ages where model data is available
-	std::vector<double> time;
+	std::vector<cl_float> time;
 	//stores the wavelengths of the model
-	std::vector<double> wavelengths;
+	std::vector<cl_float> wavelengths;
 	//the resampled model
-	std::vector<double> resampled_model;
+	std::vector<cl_float> resampled_model;
 
 	//sizes
 	int nspecsteps;
@@ -79,19 +79,19 @@ public: //data
 	std::string imf;
 
 	//fitted parameters
-	double dust_tau_v,dust_mu,sfr_tau, age, metall, vdisp;
+	cl_float dust_tau_v,dust_mu,sfr_tau, age, metall, vdisp;
 
 //buffers to write
 	//factors calucalted on gpu
 	//to pull spectra together
-	std::vector<double> factor1,factor2;
+	std::vector<cl_float> factor1,factor2;
 	//chis calculated on gpu
-	std::vector<double> chis;
+	std::vector<cl_float> chis;
 	//aggregated value of chi
-	double chi;
+	cl_float chi;
 
 	//best fitting model
-	std::vector <double> result;
+	std::vector <cl_float> result;
 
 
 //opencl

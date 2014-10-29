@@ -1,27 +1,27 @@
 #pragma OPENCL EXTENSION cl_khr_fp64 : enable
 
 __kernel void spec_gen ( 
-					__global double* res_model,
-					__global double* time, 
-					__global double* wavelengths,
+					__global float* res_model,
+					__global float* time, 
+					__global float* wavelengths,
 					
-					__global double* mes_spec,
-					__global double* mes_spec_err,
-					__global double* mes_spec_mask,
+					__global float* mes_spec,
+					__global float* mes_spec_err,
+					__global float* mes_spec_mask,
 
-					__global double* model,
-					__global double* result_no_vel,
-					__global double* factor1,
-					__global double* factor2,
+					__global float* model,
+					__global float* result_no_vel,
+					__global float* factor1,
+					__global float* factor2,
 
 					__const int nspecsteps, 
 					__const int ntimesteps,
 
-					__const double dust_tau_v,
-					__const double dust_mu,
-					__const double sfr_tau,
-					__const double age,
-					__const double metall,
+					__const float dust_tau_v,
+					__const float dust_mu,
+					__const float sfr_tau,
+					__const float age,
+					__const float metall,
 					__const int modelno
 					)
 				
@@ -31,12 +31,12 @@ __kernel void spec_gen (
 	int modelsize=nspecsteps*ntimesteps;
 
 	int i,j,place,place1,place2;
-	double exponent,dust_tau;
+	float exponent,dust_tau;
 
 	//interpolating
 	//weigths
-	double wd,wu,delta;
-	double model_metal[12]={0.0001,0.0004,0.004,0.008,0.02,0.05,0.0001,0.0004,0.004,0.008,0.02,0.05};
+	float wd,wu,delta;
+	float model_metal[12]={0.0001,0.0004,0.004,0.008,0.02,0.05,0.0001,0.0004,0.004,0.008,0.02,0.05};
 
 	delta=log( model_metal[modelno+1] / model_metal[modelno] );
 	wd=log(model_metal[modelno+1]/metall) / delta;
@@ -55,16 +55,16 @@ __kernel void spec_gen (
 /*convol*/
 
 	//part of dust exponent is constant for a wavel
-	exponent=pow(wavelengths[wave]/5500,-0.7);
+	exponent=pow(wavelengths[wave]/5500.0,-0.7);
 
-	double temp=0;
+	float temp=0;
 	temp+= time[0] * model[wave] * exp((time[0]-age)/sfr_tau);
 	for(i=1; ( time[i] <= 10e7 ) && ( time[i] <= age ) ;i++)
 	{
 		temp+= (time[i]-time[i-1]) * model[ i*nspecsteps + wave] * exp((time[i]-age)/sfr_tau);
 	}
 
-	double temp1=0;
+	float temp1=0;
 	for(; ( time[i] < age ) && ( (i+1) <ntimesteps ) ;i++)
 	{
 		temp1+= (time[i]-time[i-1]) * model[ i*nspecsteps + wave] * exp((time[i]-age)/sfr_tau);
@@ -84,37 +84,37 @@ __kernel void spec_gen (
 
 
 __kernel void mask_veloc_disp ( 
-					__global double* wavelengths,
+					__global float* wavelengths,
 					
-					__global double* mes_spec,
-					__global double* mes_spec_err,
-					__global double* mes_spec_mask,
+					__global float* mes_spec,
+					__global float* mes_spec_err,
+					__global float* mes_spec_mask,
 
-					__global double* result_no_vel,
-					__global double* result,
-					__global double* factor1,
-					__global double* factor2,
+					__global float* result_no_vel,
+					__global float* result,
+					__global float* factor1,
+					__global float* factor2,
 
 					__const int nspecsteps, 
 
-					__const double vsig
+					__const float vsig
 					)
 				
 {
 	const int wave = get_global_id(0);
 	//current wavelength
-	double curr_waveleng=wavelengths[wave];
+	float curr_waveleng=wavelengths[wave];
 
 	//width of gaussian in wavelengths
-	double sig_lam = curr_waveleng * vsig;
+	float sig_lam = curr_waveleng * vsig;
 
 	//result
-	double loc_result=0;
+	float loc_result=0;
 
 	//weigth, now it is not normalized
-	double weigth;
+	float weigth;
 	//sum of weigths for normalizing
-	double sumweigth=0;
+	float sumweigth=0;
 
 	int i;
 
@@ -148,15 +148,15 @@ __kernel void mask_veloc_disp (
 }
 
 __kernel void chi_calculation ( 
-					__global double* mes_spec,
-					__global double* mes_spec_err,
-					__global double* mes_spec_mask,
+					__global float* mes_spec,
+					__global float* mes_spec_err,
+					__global float* mes_spec_mask,
 
-					__global double* result,
-					__global double* chi,
-					__const double factor,
+					__global float* result,
+					__global float* chi,
+					__const float factor,
 
-					__global double* wavelengths
+					__global float* wavelengths
 					)			
 {
 	const int wave = get_global_id(0);
