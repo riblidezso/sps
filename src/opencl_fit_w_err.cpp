@@ -688,8 +688,8 @@ int opencl_fit_w_err::call_kernels()
 		temp_1+=factor1[i];
 		temp_2+=factor2[i];
 		//temp info out
-		std::cout<<"factor1="<<factor1[i]<<std::endl;
-		std::cout<<"factor2="<<factor2[i]<<std::endl;
+		//std::cout<<"factor1="<<factor1[i]<<std::endl;
+		//std::cout<<"factor2="<<factor2[i]<<std::endl;
 	}
 	factor=temp_1/temp_2;
 
