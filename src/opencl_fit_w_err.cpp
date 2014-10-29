@@ -521,6 +521,8 @@ int opencl_fit_w_err::set_kern_arg()
 	
 	status |= clSetKernelArg(kernel_spec_gen, 10, sizeof(int), &mes_nspecsteps);
 	status |= clSetKernelArg(kernel_spec_gen, 11, sizeof(int), &ntimesteps);
+
+
 	//error check
 	if (status!=0)
 	{
@@ -688,13 +690,13 @@ int opencl_fit_w_err::call_kernels()
 		temp_1+=factor1[i];
 		temp_2+=factor2[i];
 		//temp info out
-		std::cout<<"factor1="<<factor1[i]<<std::endl;
-		std::cout<<"factor2="<<factor2[i]<<std::endl;
+		//std::cout<<"factor1="<<factor1[i]<<std::endl;
+		//std::cout<<"factor2="<<factor2[i]<<std::endl;
 	}
 	factor=temp_1/temp_2;
 
 	//temp info out
-	std::cout<<"factor="<<factor<<std::endl;
+	//std::cout<<"factor="<<factor<<std::endl;
 
 
 	//next kernel for chi
