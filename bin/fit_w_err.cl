@@ -36,8 +36,8 @@ __kernel void spec_gen (
 	//interpolating
 	//weigths
 	float wd,wu,delta;
+	//not very elegant...
 	float model_metal[12];
-	//={0.0001,0.0004,0.004,0.008,0.02,0.05,0.0001,0.0004,0.004,0.008,0.02,0.05};
 	model_metal[0]=0.0001;
 	model_metal[1]=0.0004;
 	model_metal[2]=0.004;
@@ -92,8 +92,6 @@ __kernel void spec_gen (
 
 	result_no_vel[wave]= temp*exp(-exponent*dust_tau_v) + temp1*exp(-exponent*dust_tau_v*dust_mu);
 	
-	
-	//result_no_vel[wave]= model_metal[modelno];
 	return;
 }
 
@@ -149,7 +147,6 @@ __kernel void mask_veloc_disp (
 //counting the factor with err
 	if ( mes_spec_mask[wave] == 0 && mes_spec_err[wave]!=0  ) //
 	{
-//		factor1[wave]=  result_no_vel[wave]; 
 		factor1[wave]= (mes_spec[wave] * result[wave])  / (mes_spec_err[wave] * mes_spec_err[wave] );
 		factor2[wave]= (result[wave] * result[wave] ) / (mes_spec_err[wave] * mes_spec_err[wave]);
 	}
