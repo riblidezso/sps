@@ -347,7 +347,7 @@ int opencl_fit_w_err::opencl_initialize(std::string kernel_filename)
 	}
 
 	//Building program 
-	status=clBuildProgram(program, 1,devices,NULL,NULL,NULL);
+	status=clBuildProgram(program,numDevices,devices,NULL,NULL,NULL);
 	if (status!=0)
 	{
 		//print ERROR but do not quit, there may be just warnings
