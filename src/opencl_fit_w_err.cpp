@@ -210,7 +210,7 @@ int opencl_fit_w_err::opencl_initialize(std::string kernel_filename)
 			//print info
 			std::cout<<i<<". platform:\t"<<platform_name<<"\n";
 			std::cout<<i<<". version:\t "<<platform_version<<"\n";
-			st::cout<<std::endl;
+			std::cout<<std::endl;
 
 			delete[] platform_name;		
 			delete[] platform_version;		
