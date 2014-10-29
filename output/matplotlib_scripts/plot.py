@@ -1,22 +1,19 @@
 #!/usr/bin/python
 
-#import modules pandas might not be necessary
-#it is just for really fast reading (more than 10x faster than numpy)
 
 import numpy
 import matplotlib.pyplot as plt
-import pandas
 
 #reading files
 params=dict()
-params["dust_tau_v"]=numpy.array(pandas.read_csv("dust_tau_v.dat"))
-params["dust_mu"]=numpy.array(pandas.read_csv("dust_mu.dat"))
-params["sfr_tau"]=numpy.array(pandas.read_csv("sfr_tau.dat"))
-params["age"]=numpy.array(pandas.read_csv("age.dat"))
-params["metall"]=numpy.array(pandas.read_csv("metall.dat"))
-params["vdisp"]=numpy.array(pandas.read_csv("vdisp.dat"))
+params["dust_tau_v"]=numpy.loadtxt("dust_tau_v.dat")
+params["dust_mu"]=numpy.loadtxt("dust_mu.dat")
+params["sfr_tau"]=numpy.loadtxt("sfr_tau.dat")
+params["age"]=numpy.loadtxt("age.dat")
+params["metall"]=numpy.loadtxt("metall.dat")
+params["vdisp"]=numpy.loadtxt("vdisp.dat")
 
-fit=numpy.array(pandas.read_csv("fit.dat",delimiter=" "))
+fit=numpy.loadtxt("fit.dat",delimiter=" ")
 
 fig=plt.figure()
 #fig.set_size_inches([7,4])
