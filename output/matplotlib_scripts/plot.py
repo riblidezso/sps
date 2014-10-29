@@ -13,7 +13,7 @@ params["age"]=numpy.loadtxt("age.dat")
 params["metall"]=numpy.loadtxt("metall.dat")
 params["vdisp"]=numpy.loadtxt("vdisp.dat")
 
-fit=numpy.loadtxt("fit.dat",delimiter=" ")
+fit=numpy.loadtxt("fit.dat")
 
 fig=plt.figure()
 #fig.set_size_inches([7,4])
