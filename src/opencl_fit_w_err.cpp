@@ -469,6 +469,8 @@ int opencl_fit_w_err::set_params(
 	age = s_age;
 	metall = s_metall;
 	vdisp = s_vdisp;
+
+	return 0;
 }
 
 int opencl_fit_w_err::change_kernel_params()
