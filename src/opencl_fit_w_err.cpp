@@ -382,36 +382,42 @@ int opencl_fit_w_err::opencl_kern_mem()
 	
 	//data
 	resampled_model_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, resampled_model.size() * sizeof(cl_float),(void *) resampled_model.data(), &status);
+	//error check
 	if (status!=0)
 	{
 		std::cerr<<"ERROR creating buffers: "<<status<<std::endl;
 		return status;
 	}
 	time_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, ntimesteps * sizeof(cl_float),(void *) time.data(), &status);
+	//error check
 	if (status!=0)
 	{
 		std::cerr<<"ERROR creating buffers: "<<status<<std::endl;
 		return status;
 	}
 	wavel_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, mes_nspecsteps * sizeof(cl_float),(void *) mes_spec_wavel.data(), &status);
+	//error check
 	if (status!=0)
 	{
 		std::cerr<<"ERROR creating buffers: "<<status<<std::endl;
 		return status;
 	}
 	mes_spec_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, mes_nspecsteps * sizeof(cl_float),(void *) mes_spec.data(), &status);
+	//error check
 	if (status!=0)
 	{
 		std::cerr<<"ERROR creating buffers: "<<status<<std::endl;
 		return status;
 	}
 	mes_spec_err_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, mes_nspecsteps * sizeof(cl_float),(void *) mes_spec_err.data(), &status);
+	//error check
 	if (status!=0)
 	{
 		std::cerr<<"ERROR creating buffers: "<<status<<std::endl;
 		return status;
 	}
 	mes_spec_mask_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, mes_nspecsteps * sizeof(cl_float),(void *) mes_spec_mask.data(), &status);
+	//error check
 	if (status!=0)
 	{
 		std::cerr<<"ERROR creating buffers: "<<status<<std::endl;
@@ -422,42 +428,41 @@ int opencl_fit_w_err::opencl_kern_mem()
 
 	//buffers to write
 	model_d = clCreateBuffer(context, CL_MEM_READ_WRITE,	sizeof(cl_float) * ntimesteps * mes_nspecsteps , NULL, &status);
+	//error check
 	if (status!=0)
 	{
 		std::cerr<<"ERROR creating buffers: "<<status<<std::endl;
 		return status;
 	}
 	result_no_vel_d = clCreateBuffer(context, CL_MEM_READ_WRITE,	sizeof(cl_float) * mes_nspecsteps , NULL, &status);
+	//error check
 	if (status!=0)
 	{
 		std::cerr<<"ERROR creating buffers: "<<status<<std::endl;
 		return status;
 	}
 	result_d = clCreateBuffer(context, CL_MEM_READ_WRITE,	sizeof(cl_float) * mes_nspecsteps , NULL, &status);
+	//error check
 	if (status!=0)
 	{
 		std::cerr<<"ERROR creating buffers: "<<status<<std::endl;
 		return status;
 	}
 	factor1_d = clCreateBuffer(context, CL_MEM_WRITE_ONLY,	sizeof(cl_float) * mes_nspecsteps , NULL, &status);
+	//error check
 	if (status!=0)
 	{
 		std::cerr<<"ERROR creating buffers: "<<status<<std::endl;
 		return status;
 	}
 	factor2_d = clCreateBuffer(context, CL_MEM_WRITE_ONLY,	sizeof(cl_float) * mes_nspecsteps , NULL, &status);
+	//error check
 	if (status!=0)
 	{
 		std::cerr<<"ERROR creating buffers: "<<status<<std::endl;
 		return status;
 	}
 	chi_d = clCreateBuffer(context,  CL_MEM_WRITE_ONLY,		sizeof(cl_float) * mes_nspecsteps , NULL, &status);		
-	if (status!=0)
-	{
-		std::cerr<<"ERROR creating buffers: "<<status<<std::endl;
-		return status;
-	}
-
 	//error check
 	if (status!=0)
 	{
@@ -516,7 +521,7 @@ int opencl_fit_w_err::set_kern_arg()
 	
 	status |= clSetKernelArg(kernel_spec_gen, 10, sizeof(int), &mes_nspecsteps);
 	status |= clSetKernelArg(kernel_spec_gen, 11, sizeof(int), &ntimesteps);
-
+	//error check
 	if (status!=0)
 	{
 		std::cerr<<"ERROR setting kernel spec_gen arguments: "<<status<<std::endl;
@@ -536,7 +541,7 @@ int opencl_fit_w_err::set_kern_arg()
 	status |= clSetKernelArg(kernel_vel_disp, 7, sizeof(cl_mem), &factor2_d);
 	
 	status |= clSetKernelArg(kernel_vel_disp, 8, sizeof(int), &mes_nspecsteps);
-
+	//error check
 	if (status!=0)
 	{
 		std::cerr<<"ERROR setting kernel vel_disp arguments: "<<status<<std::endl;
@@ -550,7 +555,6 @@ int opencl_fit_w_err::set_kern_arg()
 	status |= clSetKernelArg(kernel_chi_calc, 3, sizeof(cl_mem), &result_d);
 	status |= clSetKernelArg(kernel_chi_calc, 4, sizeof(cl_mem), &chi_d);
 	status |= clSetKernelArg(kernel_chi_calc, 6, sizeof(cl_mem), &wavel_d);
-	
 	//error check
 	if (status!=0)
 	{
@@ -664,13 +668,17 @@ int opencl_fit_w_err::call_kernels()
 
 	//Read the result back to host memory
 	status = clEnqueueReadBuffer(commandQueue, factor1_d, CL_TRUE, 0, mes_nspecsteps * sizeof(cl_float) , factor1.data(), 0, NULL,NULL);
+	if (status!=0)
+	{
+		std::cerr<<"ERROR reading buffer,from kernel_vel: "<<status<<std::endl;
+		return status;
+	}
 	status = clEnqueueReadBuffer(commandQueue, factor2_d, CL_TRUE, 0, mes_nspecsteps * sizeof(cl_float) , factor2.data(), 0, NULL, NULL);
 	if (status!=0)
 	{
 		std::cerr<<"ERROR reading buffer,from kernel_vel: "<<status<<std::endl;
 		return status;
 	}
-
 
 	//summing factors, to pull spectra together
 	temp_1=0;
@@ -679,9 +687,13 @@ int opencl_fit_w_err::call_kernels()
 	{
 		temp_1+=factor1[i];
 		temp_2+=factor2[i];
+		//temp info out
+		std::cout<<"factor1="<<factor1[i]<<std::endl;
+		std::cout<<"factor2="<<factor2[i]<<std::endl;
 	}
 	factor=temp_1/temp_2;
 
+	//temp info out
 	std::cout<<"factor="<<factor<<std::endl;
 
 
