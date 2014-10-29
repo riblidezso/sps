@@ -196,10 +196,26 @@ int opencl_fit_w_err::opencl_initialize(std::string kernel_filename)
 			char* platform_name = new char[platform_name_size];
 			status = clGetPlatformInfo( platforms[i] , CL_PLATFORM_NAME ,platform_name_size, platform_name,NULL);
 
+
+			//get platform version size
+			size_t platform_version_size;
+			status = clGetPlatformInfo( platforms[i], CL_PLATFORM_VERSION, 0,NULL,&platform_version_size);
+	
+			//get platform version
+			char* platform_version = new char[platform_version_size];
+			status = clGetPlatformInfo( platforms[i], CL_PLATFORM_VERSION , platform_version_size, platform_version,NULL);
+
+
+
 			//print info
-			std::cout<<i<<". platform: "<<platform_name<<"\n";
+			std::cout<<i<<". platform:\t"<<platform_name<<"\n";
+			std::cout<<i<<". version:\t "<<platform_version<<"\n";
+			std::endl;
+
 			delete[] platform_name;		
+			delete[] platform_version;		
 		}
+
 
 		//choosing platform
 		std::cout<<"\nChoose platform: (0)"<<std::endl;
