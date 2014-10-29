@@ -270,13 +270,13 @@ int opencl_fit_w_err::opencl_initialize(std::string kernel_filename)
 
 		//device type 
 		if( device_type == CL_DEVICE_TYPE_CPU )
-			std::cout<<"            type: CPU"<<std::endl;
+			std::cout<<"            type:\tCPU"<<std::endl;
 		if( device_type == CL_DEVICE_TYPE_GPU )
-			std::cout<<"            type: GPU"<<std::endl;
+			std::cout<<"            type:\tGPU"<<std::endl;
 		if( device_type == CL_DEVICE_TYPE_ACCELERATOR )
-			std::cout<<"            type: ACCELERATOR"<<std::endl;
+			std::cout<<"            type:\tACCELERATOR"<<std::endl;
 		if( device_type == CL_DEVICE_TYPE_DEFAULT)
-			std::cout<<"            type: DEFAULT"<<std::endl;
+			std::cout<<"            type:\tDEFAULT"<<std::endl;
 
 		std::cout<<"            version:\t"<<device_version<<std::endl;
 
