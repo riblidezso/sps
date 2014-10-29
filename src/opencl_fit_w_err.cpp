@@ -240,6 +240,7 @@ int opencl_fit_w_err::opencl_initialize(std::string kernel_filename)
 		char* device_vendor = new char[device_vendor_size];
 		status = clGetDeviceInfo( devices[i], CL_DEVICE_VENDOR, device_vendor_size,device_vendor,NULL);
 
+
 		//get device name size
 		size_t device_name_size;
 		status = clGetDeviceInfo( devices[i], CL_DEVICE_NAME, 0,NULL,&device_name_size);
@@ -248,13 +249,24 @@ int opencl_fit_w_err::opencl_initialize(std::string kernel_filename)
 		char* device_name = new char[device_name_size];
 		status = clGetDeviceInfo( devices[i], CL_DEVICE_NAME, device_name_size,device_name,NULL);
 
+
 		//get devicetype 
 		cl_device_type device_type;
 		status = clGetDeviceInfo( devices[i], CL_DEVICE_TYPE, sizeof(cl_device_type),&device_type,NULL);
 
+
+		//get device version size
+		size_t device_version_size;
+		status = clGetDeviceInfo( devices[i], CL_DEVICE_VERSION, 0,NULL,&device_version_size);
+
+		//get device version
+		char* device_version = new char[device_version_size];
+		status = clGetDeviceInfo( devices[i], CL_DEVICE_VERSION , device_version_size, device_version,NULL);
+
+
 		//print info
-		std::cout<<i<<". device vendor: "<<device_vendor<<std::endl;
-		std::cout<<"            name:"<<device_name<<std::endl;
+		std::cout<<i<<". device vendor:\t"<<device_vendor<<std::endl;
+		std::cout<<"            name:\t"<<device_name<<std::endl;
 
 		//device type 
 		if( device_type == CL_DEVICE_TYPE_CPU )
@@ -266,8 +278,11 @@ int opencl_fit_w_err::opencl_initialize(std::string kernel_filename)
 		if( device_type == CL_DEVICE_TYPE_DEFAULT)
 			std::cout<<"            type: DEFAULT"<<std::endl;
 
+		std::cout<<"            version:\t"<<device_version<<std::endl;
+
 		delete[] device_vendor;
 		delete[] device_name;
+		delete[] device_version;
 	}
 
 	//choosing device
