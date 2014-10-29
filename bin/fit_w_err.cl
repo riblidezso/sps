@@ -36,7 +36,20 @@ __kernel void spec_gen (
 	//interpolating
 	//weigths
 	float wd,wu,delta;
-	float model_metal[12]={0.0001,0.0004,0.004,0.008,0.02,0.05,0.0001,0.0004,0.004,0.008,0.02,0.05};
+	float model_metal[12];
+	//={0.0001,0.0004,0.004,0.008,0.02,0.05,0.0001,0.0004,0.004,0.008,0.02,0.05};
+	model_metal[0]=0.0001;
+	model_metal[1]=0.0004;
+	model_metal[2]=0.004;
+	model_metal[3]=0.008;
+	model_metal[4]=0.02;
+	model_metal[5]=0.05;
+	model_metal[6]=0.0001;
+	model_metal[7]=0.0004;
+	model_metal[8]=0.004;
+	model_metal[9]=0.008;
+	model_metal[10]=0.02;
+	model_metal[11]=0.05;
 
 	delta=log( model_metal[modelno+1] / model_metal[modelno] );
 	wd=log(model_metal[modelno+1]/metall) / delta;
@@ -79,7 +92,7 @@ __kernel void spec_gen (
 
 	result_no_vel[wave]= temp*exp(-exponent*dust_tau_v) + temp1*exp(-exponent*dust_tau_v*dust_mu);
 	
-	result_no_vel[wave]= modelno;
+	result_no_vel[wave]= model_metal[modelno];
 	return;
 }
 
