@@ -16,11 +16,11 @@ opencl_fit_w_err::opencl_fit_w_err(sps_read& model)
 	mes_nspecsteps=model.mes_spec_wavel.size();
 
 	//copy small data
-	time=model.time;
-	mes_spec=model.mes_spec;
-	mes_spec_wavel=model.mes_spec_wavel;
-	mes_spec_mask=model.mes_spec_mask;
-	mes_spec_err=model.mes_spec_err_h;
+	time=std::vector<cl_double>(model.time.begin(),model.time.end());
+	mes_spec=std::vector<cl_double>(model.mes_spec.begin(),model.mes_spec.end());
+	mes_spec_wavel=std::vector<cl_double>(model.mes_spec_wavel.begin(),model.mes_spec_wavel.end());
+	mes_spec_mask=std::vector<cl_double>(model.mes_spec_mask.begin(),model.mes_spec_mask.end());
+	mes_spec_err=std::vector<cl_double>(model.mes_spec_err_h.begin(),model.mes_spec_err_h.end());
 
 	//resize the data scturcures that will 
 	//be computed at every wavelength
@@ -349,22 +349,22 @@ int opencl_fit_w_err::opencl_kern_mem()
 	// Allocate memory on device 
 	
 	//data
-	resampled_model_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, resampled_model.size() * sizeof(double),(void *) resampled_model.data(), &status);
-	time_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, ntimesteps * sizeof(double),(void *) time.data(), &status);
-	wavel_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, mes_nspecsteps * sizeof(double),(void *) mes_spec_wavel.data(), &status);
-	mes_spec_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, mes_nspecsteps * sizeof(double),(void *) mes_spec.data(), &status);
-	mes_spec_err_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, mes_nspecsteps * sizeof(double),(void *) mes_spec_err.data(), &status);
-	mes_spec_mask_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, mes_nspecsteps * sizeof(double),(void *) mes_spec_mask.data(), &status);
+	resampled_model_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, resampled_model.size() * sizeof(cl_double),(void *) resampled_model.data(), &status);
+	time_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, ntimesteps * sizeof(cl_double),(void *) time.data(), &status);
+	wavel_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, mes_nspecsteps * sizeof(cl_double),(void *) mes_spec_wavel.data(), &status);
+	mes_spec_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, mes_nspecsteps * sizeof(cl_double),(void *) mes_spec.data(), &status);
+	mes_spec_err_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, mes_nspecsteps * sizeof(cl_double),(void *) mes_spec_err.data(), &status);
+	mes_spec_mask_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, mes_nspecsteps * sizeof(cl_double),(void *) mes_spec_mask.data(), &status);
 	
 
 
 	//buffers to write
-	model_d = clCreateBuffer(context, CL_MEM_READ_WRITE,	sizeof(double) * ntimesteps * mes_nspecsteps , NULL, &status);
-	result_no_vel_d = clCreateBuffer(context, CL_MEM_READ_WRITE,	sizeof(double) * mes_nspecsteps , NULL, &status);
-	result_d = clCreateBuffer(context, CL_MEM_READ_WRITE,	sizeof(double) * mes_nspecsteps , NULL, &status);
-	factor1_d = clCreateBuffer(context, CL_MEM_WRITE_ONLY,	sizeof(double) * mes_nspecsteps , NULL, &status);
-	factor2_d = clCreateBuffer(context, CL_MEM_WRITE_ONLY,	sizeof(double) * mes_nspecsteps , NULL, &status);
-	chi_d = clCreateBuffer(context,  CL_MEM_WRITE_ONLY,		sizeof(double) * mes_nspecsteps , NULL, &status);		
+	model_d = clCreateBuffer(context, CL_MEM_READ_WRITE,	sizeof(cl_double) * ntimesteps * mes_nspecsteps , NULL, &status);
+	result_no_vel_d = clCreateBuffer(context, CL_MEM_READ_WRITE,	sizeof(cl_double) * mes_nspecsteps , NULL, &status);
+	result_d = clCreateBuffer(context, CL_MEM_READ_WRITE,	sizeof(cl_double) * mes_nspecsteps , NULL, &status);
+	factor1_d = clCreateBuffer(context, CL_MEM_WRITE_ONLY,	sizeof(cl_double) * mes_nspecsteps , NULL, &status);
+	factor2_d = clCreateBuffer(context, CL_MEM_WRITE_ONLY,	sizeof(cl_double) * mes_nspecsteps , NULL, &status);
+	chi_d = clCreateBuffer(context,  CL_MEM_WRITE_ONLY,		sizeof(cl_double) * mes_nspecsteps , NULL, &status);		
 
 	//error check
 	if (status!=0)
@@ -469,6 +469,8 @@ int opencl_fit_w_err::set_params(
 	age = s_age;
 	metall = s_metall;
 	vdisp = s_vdisp;
+
+	return 0;
 }
 
 int opencl_fit_w_err::change_kernel_params()
@@ -499,11 +501,11 @@ int opencl_fit_w_err::change_kernel_params()
 	
 //(ready reached max no of constant arguments...)
 //set  the kernel arguments that has changed
-	status = clSetKernelArg(kernel_spec_gen, 12, sizeof(double), &dust_tau_v);
-	status |= clSetKernelArg(kernel_spec_gen, 13, sizeof(double), &dust_mu);
-	status |= clSetKernelArg(kernel_spec_gen, 14, sizeof(double), &sfr_tau);
-	status |= clSetKernelArg(kernel_spec_gen, 15, sizeof(double), &age);
-	status |= clSetKernelArg(kernel_spec_gen, 16, sizeof(double), &metall);
+	status = clSetKernelArg(kernel_spec_gen, 12, sizeof(cl_double), &dust_tau_v);
+	status |= clSetKernelArg(kernel_spec_gen, 13, sizeof(cl_double), &dust_mu);
+	status |= clSetKernelArg(kernel_spec_gen, 14, sizeof(cl_double), &sfr_tau);
+	status |= clSetKernelArg(kernel_spec_gen, 15, sizeof(cl_double), &age);
+	status |= clSetKernelArg(kernel_spec_gen, 16, sizeof(cl_double), &metall);
 	status |= clSetKernelArg(kernel_spec_gen, 17, sizeof(int), &modelno);
 	if (status!=0)
 	{
@@ -511,7 +513,7 @@ int opencl_fit_w_err::change_kernel_params()
 		return status;
 	}
 
-	status = clSetKernelArg(kernel_vel_disp, 9, sizeof(double), &vdisp);
+	status = clSetKernelArg(kernel_vel_disp, 9, sizeof(cl_double), &vdisp);
 	if (status!=0)
 	{
 		std::cerr<<"ERROR setting kernel_vel_disp arguments: "<<status<<std::endl;
@@ -531,7 +533,7 @@ int opencl_fit_w_err::call_kernels()
 	//temp1, temp2 are sums of vectors factor1,factor2
 	//they are use to calculate the "factor" that pulls together observed
 	//and model spectra
-	double temp_1,temp_2,factor;
+	cl_double temp_1,temp_2,factor;
 
 	//generating spectrum (no velocity dispersion)
 	// Running the kernel.
@@ -554,8 +556,8 @@ int opencl_fit_w_err::call_kernels()
 	}
 
 	//Read the result back to host memory
-	status = clEnqueueReadBuffer(commandQueue, factor1_d, CL_TRUE, 0, mes_nspecsteps * sizeof(double) , factor1.data(), 0, NULL,NULL);
-	status = clEnqueueReadBuffer(commandQueue, factor2_d, CL_TRUE, 0, mes_nspecsteps * sizeof(double) , factor2.data(), 0, NULL, NULL);
+	status = clEnqueueReadBuffer(commandQueue, factor1_d, CL_TRUE, 0, mes_nspecsteps * sizeof(cl_double) , factor1.data(), 0, NULL,NULL);
+	status = clEnqueueReadBuffer(commandQueue, factor2_d, CL_TRUE, 0, mes_nspecsteps * sizeof(cl_double) , factor2.data(), 0, NULL, NULL);
 	if (status!=0)
 	{
 		std::cerr<<"ERROR reading buffer,from kernel_vel: "<<status<<std::endl;
@@ -576,7 +578,7 @@ int opencl_fit_w_err::call_kernels()
 
 	//next kernel for chi
 	//Set kernel_chi_calc argument
-	status |= clSetKernelArg(kernel_chi_calc, 5, sizeof(double), &factor);
+	status |= clSetKernelArg(kernel_chi_calc, 5, sizeof(cl_double), &factor);
 	if (status!=0)
 	{
 		std::cerr<<"ERROR setting kernel_chi_calc arguments: "<<status<<std::endl;
@@ -593,7 +595,7 @@ int opencl_fit_w_err::call_kernels()
 	//Read the chis to host memory.
 	//now we dont read back the fittes spectrum
 	//only when it is the best so far
-	status = clEnqueueReadBuffer(commandQueue, chi_d, CL_TRUE, 0, mes_nspecsteps * sizeof(double) , chis.data(), 0,NULL,NULL);
+	status = clEnqueueReadBuffer(commandQueue, chi_d, CL_TRUE, 0, mes_nspecsteps * sizeof(cl_double) , chis.data(), 0,NULL,NULL);
 	if (status!=0)
 	{
 		std::cerr<<"ERROR reading chi buffer: "<<status<<std::endl;
@@ -612,7 +614,7 @@ int opencl_fit_w_err::read_best_result()
 {
 	cl_int status=0;
 
-	status = clEnqueueReadBuffer(commandQueue, result_d, CL_TRUE, 0, mes_nspecsteps * sizeof(double) , result.data(), 0, NULL, NULL);
+	status = clEnqueueReadBuffer(commandQueue, result_d, CL_TRUE, 0, mes_nspecsteps * sizeof(cl_double) , result.data(), 0, NULL, NULL);
 
 	if (status!=0)
 		std::cout<<"ERROR reading buffer: "<<status<<std::endl;
@@ -622,11 +624,12 @@ int opencl_fit_w_err::read_best_result()
 
 int opencl_fit_w_err::write_fit_result()
 {
+	//lets hope it works
 	std::vector<std::vector <double> > output;
-	output.push_back(mes_spec_wavel);
-	output.push_back(mes_spec);
-	output.push_back(mes_spec_err);
-	output.push_back(result);
+	output.push_back(std::vector<double>(mes_spec_wavel.begin(),mes_spec_wavel.end()));
+	output.push_back(std::vector<double>(mes_spec.begin(),mes_spec.end()));
+	output.push_back(std::vector<double>(mes_spec_err.begin(),mes_spec_err.end()));
+	output.push_back(std::vector<double>(result.begin(),result.end()));
 
 	//functions from sps_write 
 	write_table_col(output,"../output/fit.dat");
