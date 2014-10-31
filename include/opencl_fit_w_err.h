@@ -36,7 +36,7 @@ public: //functions
 	//does basic opencl operations (choose platfrom devices etc)
 	int opencl_initialize(std::string kernel_filename);
 	//reads the kernel files to a string
-	int convertToString(const char *filename, std::string& s);
+	int convertToString(std::string infilename , std::string& s);
 
 	//creates kernels objects, and allocates buffers on the GPU (or other device)
 	int opencl_kern_mem();

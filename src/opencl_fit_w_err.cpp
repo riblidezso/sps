@@ -15,15 +15,15 @@ opencl_fit_w_err::opencl_fit_w_err(sps_read& model)
 	ntimesteps=model.time.size();
 	mes_nspecsteps=model.mes_spec_wavel.size();
 
-	//copy small data
+	//copy (and there is type conversion too) small data, that wont be modified 
 	time=std::vector<cl_float>(model.time.begin(),model.time.end());
 	mes_spec=std::vector<cl_float>(model.mes_spec.begin(),model.mes_spec.end());
 	mes_spec_wavel=std::vector<cl_float>(model.mes_spec_wavel.begin(),model.mes_spec_wavel.end());
 	mes_spec_mask=std::vector<cl_float>(model.mes_spec_mask.begin(),model.mes_spec_mask.end());
 	mes_spec_err=std::vector<cl_float>(model.mes_spec_err_h.begin(),model.mes_spec_err_h.end());
 
-	//resize the data scturcures that will 
-	//be computed at every wavelength
+	//resize the data structures to mes_nspecteps
+	//that will be computed at every wavelength
 	factor1.resize(mes_nspecsteps);		 
 	factor2.resize(mes_nspecsteps);		
 	chis.resize(mes_nspecsteps);
@@ -31,21 +31,31 @@ opencl_fit_w_err::opencl_fit_w_err(sps_read& model)
 
 	//imf, if you want to use salpeter
 	//uncomment that line and comment chabrier
+	//TODO -> config file!!
 	imf="chabrier";
 	//imf="salpeter";
 
 }
 
 
-//this function gets 
-//original models from read object
-//and measuremant data
-
-//and then resamples all the models to the wavelengths of
-//the measurement, this reduces computation time 6900->3-4000
+ 
+//gets original models  from read object
+//and resamples all the models to the wavelengths of
+//the measurement
 int opencl_fit_w_err::resample_models_2_mes(sps_read& model)
 {
+	//calculate model offset from imf
+	// 0-5 is chabrier, 6-11 is salpeter
+	// this is not very elegant
+	int offset;
+	if( imf == "chabrier")
+		offset=0;
+	else if(imf=="salpeter")
+		offset=6;
+
 	//resize the vector that will store the resampled model
+	//this is a huge contigous vector because this makes it
+	//easy to pass it to GPU (only have to give pointer and size)
 	resampled_model.resize(ntimesteps * mes_nspecsteps * 6);
 
 	//wd, wu are weigths for interpolation, delta is wavelength distance
@@ -55,14 +65,7 @@ int opencl_fit_w_err::resample_models_2_mes(sps_read& model)
 	int low,high,place,place1;
 	high=0;
 
-	//calculate model offset from imf
-	// 0-5 is chabrier, 6-11 is salpeter
-	// this is not very elegant
-	int offset;
-	if( imf == "chabrier")
-		offset=0;
-	else if(imf=="salpeter")
-		offset=6;
+
 
 	//the resampling
 	//loop over measurement points
@@ -75,8 +78,8 @@ int opencl_fit_w_err::resample_models_2_mes(sps_read& model)
 		while(mes_spec_wavel[i] > model.wavelengths[high])
 		{
 			high++;
-			//there might be problems if the one measured data is 
-			//larger than last model data, but this is unlikely
+			//there might be problems if the one measured data wavelength is 
+			//larger than last model data, but this seems unlikely
 			if (high==nspecsteps)
 			{
 				std::cerr<<"\nERROR measurement wavelength"<<mes_spec_wavel[i]<<"\n";
@@ -85,8 +88,8 @@ int opencl_fit_w_err::resample_models_2_mes(sps_read& model)
 			}
 		}
 			
-		//there might be problems if the first measured data is 
-		//smaller than first model data, but this is unlikely
+		//there might be problems if the first measured wavelength is 
+		//smaller than first model data, but this seems also unlikely
 		if (high==0)
 		{
 			std::cerr<<"\nERROR measurement wavelength"<<mes_spec_wavel[i]<<"\n";
@@ -104,15 +107,13 @@ int opencl_fit_w_err::resample_models_2_mes(sps_read& model)
 
 
 		//the intepolation
-
 		//loop over different metallicity models
 		for(int k=offset;k<offset+6;k++)
 		{
 			//loop over timesteps
 			for(int j=0;j<ntimesteps;j++)
 			{
-				//calculate positions in the big continous models
-				//vector (matrix) that stores all models
+				//calculate positions in the big continous models vector
 				place=mes_nspecsteps*ntimesteps*k + mes_nspecsteps*j;
 				place1=nspecsteps*ntimesteps*k + nspecsteps*j;
 				//interpolation
@@ -123,50 +124,47 @@ int opencl_fit_w_err::resample_models_2_mes(sps_read& model)
 	return 0;
 }
 
-//function from ATI SDK
-// convert the kernel file into a string 
-int opencl_fit_w_err::convertToString(const char *filename, std::string& s)
+
+// load the kernel file into a null terminated string 
+int opencl_fit_w_err::convertToString(std::string infilename, std::string& str)
 {
-	size_t size;
-	char*  str;
-	std::fstream f(filename, (std::fstream::in | std::fstream::binary));
+	//open file in binary i/o 
+	std::ifstream infile(infilename.c_str(), std::ios::binary |std::ios::ate); 
+	//check file 
+	if(!(infile)) 
+	{ 
+		std::cout<<"\nERROR CAN'T OPEN KERNEL FILE: "<<infilename<<"\n"<<std::endl; 
+		return 1; 
+	} 
 
-	if(f.is_open())
-	{
-		size_t fileSize;
-		f.seekg(0, std::fstream::end);
-		size = fileSize = (size_t)f.tellg();
-		f.seekg(0, std::fstream::beg);
-		str = new char[size+1];
-		if(!str)
-		{
-			f.close();
-			return 0;
-		}
+	//get the size of the file 
+	std::ifstream::pos_type size;							 
+	size = infile.tellg();	 
+	//go to the begginging of file								 
+	infile.seekg (0, std::ios::beg); 
 
-		f.read(str, fileSize);
-		f.close();
-		str[size] = '\0';
-		s = str;
-		delete[] str;
-		return 0;
-	}
-	std::cerr<<"Error: failed to open kernel file\n:"<<filename<<std::endl;
-	return 1;
+
+	//read file
+	str.resize(size);
+	infile.read((char*)(str.c_str()), size);
+	//append "\0"
+	str+='\0';
+
+	return 0;
 }
 
-
+//chooses opencl platfrom, and device
+//creates context, commandque
+//loads kernel files, and builds them
 int opencl_fit_w_err::opencl_initialize(std::string kernel_filename)
 {
 	//error variable
 	cl_int	status=0;
 
-
 	//Getting OpenCL platforms and choose an available one.
-	cl_uint numPlatforms;			//the NO. of platforms
+	cl_uint numPlatforms;				//the NO. of platforms
 	cl_platform_id* platforms = NULL; 	//id of available platforms
 	cl_platform_id 	platform = NULL;	//id of the chosen platform
-
 
 	//getting NO. of platforms
 	status = clGetPlatformIDs(0, NULL, &numPlatforms); 
@@ -206,7 +204,6 @@ int opencl_fit_w_err::opencl_initialize(std::string kernel_filename)
 			status = clGetPlatformInfo( platforms[i], CL_PLATFORM_VERSION , platform_version_size, platform_version,NULL);
 
 
-
 			//print info
 			std::cout<<i<<". platform:\t"<<platform_name<<"\n";
 			std::cout<<i<<". version:\t "<<platform_version<<"\n";
@@ -231,8 +228,7 @@ int opencl_fit_w_err::opencl_initialize(std::string kernel_filename)
 		delete[] platforms;		
 	}
 
-	//Query the platform and choose the  device.
-
+	//Query the platform and choose the  device
 	cl_uint		numDevices = 0; 	//NO. of devices
 	cl_device_id	*devices;		// device ids
 	cl_device_id	device;			//id of chosen device
@@ -313,6 +309,7 @@ int opencl_fit_w_err::opencl_initialize(std::string kernel_filename)
 	device = devices[device_choice];
 
 	//starting clock for the whole program
+	//(it is started after all the interactive steps ended)
 	t1 = clock();
 
 	//Create context
@@ -323,7 +320,7 @@ int opencl_fit_w_err::opencl_initialize(std::string kernel_filename)
 		return status;
 	}
  
-	//Creating command queue associate with the context
+	//Creating command queue associated with the context
 	commandQueue = clCreateCommandQueue(context, device, 0, &status);
 	if (status!=0)
 	{
@@ -332,9 +329,9 @@ int opencl_fit_w_err::opencl_initialize(std::string kernel_filename)
 	}
 
 	//open kernel file and convert it to char array
-	const char *filename = kernel_filename.c_str();
+	//const char *filename = kernel_filename.c_str();
 	std::string sourceStr;
-	status = convertToString(filename, sourceStr);
+	status = convertToString(kernel_filename, sourceStr);
 	const char *source = sourceStr.c_str();
 	size_t sourceSize[] = {strlen(source)};
 
@@ -347,6 +344,8 @@ int opencl_fit_w_err::opencl_initialize(std::string kernel_filename)
 	}
 
 	//Building program 
+	//only prints log if there was an error
+	//if there are only warnings it is not printed
 	status=clBuildProgram(program,numDevices,devices,NULL,NULL,NULL);
 	if (status!=0)
 	{
@@ -372,15 +371,16 @@ int opencl_fit_w_err::opencl_initialize(std::string kernel_filename)
 	return status;
 }
 
-//this function allocates buffers on devices
-//and creates kernels
+//allocates buffers on devices
+//and creates kernel objects
 int opencl_fit_w_err::opencl_kern_mem()
 {
+	//error variable
 	cl_int status=0;
 	
 	// Allocate memory on device 
 	
-	//data
+	//data to read
 	resampled_model_d = clCreateBuffer(context, CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR, resampled_model.size() * sizeof(cl_float),(void *) resampled_model.data(), &status);
 	//error check
 	if (status!=0)
@@ -425,8 +425,7 @@ int opencl_fit_w_err::opencl_kern_mem()
 	}
 	
 
-
-	//buffers to write
+	//buffers to read and write
 	model_d = clCreateBuffer(context, CL_MEM_READ_WRITE,	sizeof(cl_float) * ntimesteps * mes_nspecsteps , NULL, &status);
 	//error check
 	if (status!=0)
@@ -497,13 +496,17 @@ int opencl_fit_w_err::opencl_kern_mem()
 }
 
 //Setting kernel arguments
-//
-//with arrays this need not be done again, even if
+//with the buffers on the GPU (device)
+//this need not be done again, even if
 //data changes the kernel will read the new data
 int opencl_fit_w_err::set_kern_arg()
 {
 	//error variable
 	cl_int status=0;
+
+	//not all kernel arguments are set now
+	//some will be changed/calculated later
+	//those will be set later
 
 	//kernel_spec_gen
 	status = clSetKernelArg(kernel_spec_gen, 0, sizeof(cl_mem), &resampled_model_d);
@@ -521,14 +524,13 @@ int opencl_fit_w_err::set_kern_arg()
 	
 	status |= clSetKernelArg(kernel_spec_gen, 10, sizeof(int), &mes_nspecsteps);
 	status |= clSetKernelArg(kernel_spec_gen, 11, sizeof(int), &ntimesteps);
-
-
 	//error check
 	if (status!=0)
 	{
 		std::cerr<<"ERROR setting kernel spec_gen arguments: "<<status<<std::endl;
 		return status;
 	}
+
 
 	//kernel_vel_disp
 	status = clSetKernelArg(kernel_vel_disp, 0, sizeof(cl_mem), &wavel_d);
@@ -564,10 +566,11 @@ int opencl_fit_w_err::set_kern_arg()
 		return status;
 	}
 
+
 	return status;
 }
 
-//set params
+//set params (also type conversion if needed)
 int opencl_fit_w_err::set_params(
 				double s_dust_tau_v,
 				double s_dust_mu,
@@ -588,20 +591,26 @@ int opencl_fit_w_err::set_params(
 
 int opencl_fit_w_err::change_kernel_params()
 {
+	//error variable
 	cl_int status=0;
 
 	//this part finds the metallicity models
-	//nearest to metall, these will be use
-	//at the interpolation step
+	//nearest to metall value, these will be used
+	//at the interpolation step in the kernel
 	int offset;
 	if( imf == "chabrier")
 		offset=0;
 	else if(imf == "salpeter")
 		offset=6;
-	
+
+	//metallicity of models:
 	double model_metal[6]={0.0001,0.0004,0.004,0.008,0.02,0.05};
+
+	//the index of the model wich is lower than metall
+	//this will be passed a the kernel:
 	int modelno;
-	//finding models to interpolate metall
+
+	//find modelno
 	for(int j=0;j<6;j++)
 	{
 		if(model_metal[j] > metall)
@@ -611,9 +620,11 @@ int opencl_fit_w_err::change_kernel_params()
 		}
 	}
 
-	
-//(ready reached max no of constant arguments...)
-//set  the kernel arguments that has changed
+
+	//set  the kernel arguments that has changed
+	//TODO (ready reached max no of constant arguments?)
+
+	//kernel spec_gen
 	status = clSetKernelArg(kernel_spec_gen, 12, sizeof(cl_float), &dust_tau_v);
 	status |= clSetKernelArg(kernel_spec_gen, 13, sizeof(cl_float), &dust_mu);
 	status |= clSetKernelArg(kernel_spec_gen, 14, sizeof(cl_float), &sfr_tau);
@@ -626,6 +637,7 @@ int opencl_fit_w_err::change_kernel_params()
 		return status;
 	}
 
+	//kernel vel_disp
 	status = clSetKernelArg(kernel_vel_disp, 9, sizeof(cl_float), &vdisp);
 	if (status!=0)
 	{
@@ -683,6 +695,8 @@ int opencl_fit_w_err::call_kernels()
 	}
 
 	//summing factors, to pull spectra together
+	//summing is sequential on CPU
+	//paralell summing would an overkill for 3-4000 no i guess
 	temp_1=0;
 	temp_2=0;
 	for(int i=0;i<mes_nspecsteps;i++)
@@ -693,7 +707,7 @@ int opencl_fit_w_err::call_kernels()
 	factor=temp_1/temp_2;
 
 
-	//next kernel for chi
+	//next kernel for chi calculation
 	//Set kernel_chi_calc argument
 	status |= clSetKernelArg(kernel_chi_calc, 5, sizeof(cl_float), &factor);
 	if (status!=0)
@@ -710,7 +724,7 @@ int opencl_fit_w_err::call_kernels()
 	}	
 
 	//Read the chis to host memory.
-	//now we dont read back the fittes spectrum
+	//now we dont read back the fitted spectrum
 	//only when it is the best so far
 	status = clEnqueueReadBuffer(commandQueue, chi_d, CL_TRUE, 0, mes_nspecsteps * sizeof(cl_float) , chis.data(), 0,NULL,NULL);
 	if (status!=0)
@@ -719,7 +733,7 @@ int opencl_fit_w_err::call_kernels()
 		return status;
 	}
 
-	//summing chisquares
+	//summing chis
 	chi=0;
 	for(int i=0;i<mes_nspecsteps;i++)
 		chi+=chis[i];
@@ -727,12 +741,15 @@ int opencl_fit_w_err::call_kernels()
 	return status;
 }
 
+//read the result modeled spectrum, when the chi is the lowest
 int opencl_fit_w_err::read_best_result()
 {
+	//error
 	cl_int status=0;
 
+	//read from GPU (device)
 	status = clEnqueueReadBuffer(commandQueue, result_d, CL_TRUE, 0, mes_nspecsteps * sizeof(cl_float) , result.data(), 0, NULL, NULL);
-
+	//error check
 	if (status!=0)
 		std::cout<<"ERROR reading buffer: "<<status<<std::endl;
 
@@ -741,18 +758,18 @@ int opencl_fit_w_err::read_best_result()
 
 int opencl_fit_w_err::write_fit_result()
 {
-	//lets hope it works
+	//type conversion for the simple write_table function i wrote
 	std::vector<std::vector <double> > output;
 	output.push_back(std::vector<double>(mes_spec_wavel.begin(),mes_spec_wavel.end()));
 	output.push_back(std::vector<double>(mes_spec.begin(),mes_spec.end()));
 	output.push_back(std::vector<double>(mes_spec_err.begin(),mes_spec_err.end()));
 	output.push_back(std::vector<double>(result.begin(),result.end()));
 
-	//functions from sps_write 
+	//table writing function from sps_write 
 	write_table_col(output,"../output/fit.dat");
 
 	//info out
-	std::cout<<"fit writing succesful: "<<std::endl;
+	std::cout<<"fit writing succesful: sps/output/fit.dat"<<std::endl;
 	return 0;
 }
 
@@ -791,7 +808,6 @@ int opencl_fit_w_err::clean_resources()
 	status = clReleaseContext(context);
 	if (status!=0)
 		std::cerr<<"ERROR releasing objects: "<<status<<std::endl;
-
 
 	//stop clock	
 	t2 = clock();
