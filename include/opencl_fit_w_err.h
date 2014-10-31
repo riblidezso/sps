@@ -17,6 +17,7 @@
 #include "sps_read.h"
 
 #include <map>
+#include <time.h>
 
 class opencl_fit_w_err{
 public:
