@@ -27,6 +27,10 @@ int sps_mcmc::read_config(std::string input_filename)
 	{
 		std::stringstream sstr;
 		std::vector<std::string> tempvec;
+		
+		//visual studio complained about initializer lists
+		std::vector<double> emptyvec;
+		
 		sstr<<str;	
 		while(sstr>>str)
 		{
@@ -41,16 +45,16 @@ int sps_mcmc::read_config(std::string input_filename)
 			{
 				parameters.insert(std::pair<std::string,double> (tempvec[1],atof(tempvec[2].c_str())));
 				best_parameters.insert(std::pair<std::string,double> (tempvec[1],atof(tempvec[2].c_str())));
-				parameter_evol.insert(std::pair<std::string,std::vector<double> > (tempvec[1],{}));
+				parameter_evol.insert(std::pair<std::string,std::vector<double> > (tempvec[1],emptyvec));
 				steps.insert(std::pair<std::string,double> (tempvec[1],0));
 
 				//stuff for controlling step size
 				//this might be in some advanced config file
 				//initial step size hardcoded 
 				sigmas.insert(std::pair<std::string,double> (tempvec[1],0.2));
-				sigmas_evol.insert(std::pair<std::string,std::vector<double> > (tempvec[1],{}));
-				acc_s.insert(std::pair<std::string,std::vector<double> > (tempvec[1],{}));
-				acc_ratio_s.insert(std::pair<std::string,std::vector<double> > (tempvec[1],{}));
+				sigmas_evol.insert(std::pair<std::string,std::vector<double> > (tempvec[1],emptyvec));
+				acc_s.insert(std::pair<std::string,std::vector<double> > (tempvec[1],emptyvec));
+				acc_ratio_s.insert(std::pair<std::string,std::vector<double> > (tempvec[1],emptyvec));
 			}	
 	
 			//parameter boundaries
