@@ -20,7 +20,30 @@ IDIR = include
 
 #Build rules
 # kicsit fura de ez van
- 
+
+
+#Building fitter
+$(BIN)/fit_sdss : $(ODIR)/main_fit_sdss.o $(ODIR)/opencl_fit_w_err.o $(ODIR)/sps_mcmc.o $(ODIR)/sps_read.o  $(ODIR)/sps_write.o
+	$(LINK) -o $@ $^ $(LIBOPENCL)
+
+
+$(ODIR)/main_fit_sdss.o : $(SRC)/main_fit_sdss.cpp
+	$(CXX) -c -o  $@ $< $(CXXFLAGS)
+
+
+$(ODIR)/opencl_fit_w_err.o : $(SRC)/opencl_fit_w_err.cpp $(IDIR)/opencl_fit_w_err.h
+	$(CXX) -c -o  $@ $< $(CXXFLAGS) $(LIBOPENCL)
+
+$(ODIR)/sps_mcmc.o : $(SRC)/sps_mcmc.cpp $(IDIR)/sps_mcmc.h 
+	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
+
+$(ODIR)/sps_read.o : $(SRC)/sps_read.cpp $(IDIR)/sps_read.h 
+	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
+
+$(ODIR)/sps_write.o : $(SRC)/sps_write.cpp $(IDIR)/sps_write.h 
+	$(CXX) -c -o  $@ $< $(CXXFLAGS)
+
+
 #Building converter
 $(BIN)/convert_ascii_2_bin : $(ODIR)/main_convert_ascii_2_bin.o  $(ODIR)/convert_ascii_2_bin.o 
 	$(LINK) -o $@ $^
@@ -43,29 +66,9 @@ $(ODIR)/main_spec_gen.o : $(SRC)/main_spec_gen.cpp
 $(ODIR)/spec_gen.o : $(SRC)/spec_gen.cpp $(IDIR)/spec_gen.h
 	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
 
-$(ODIR)/sps_read.o : $(SRC)/sps_read.cpp $(IDIR)/sps_read.h 
-	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
+#$(ODIR)/sps_read.o : $(SRC)/sps_read.cpp $(IDIR)/sps_read.h 
+#	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
 
-
-#Building fitter
-$(BIN)/fit_sdss : $(ODIR)/main_fit_sdss.o $(ODIR)/opencl_fit_w_err.o $(ODIR)/sps_mcmc.o $(ODIR)/sps_read.o  $(ODIR)/sps_write.o
-	$(LINK) -o $@ $^ $(LIBOPENCL) 
-
-$(ODIR)/main_fit_sdss.o : $(SRC)/main_fit_sdss.cpp
-	$(CXX) -c -o  $@ $< $(CXXFLAGS) $(LIBOPENCL)
-
-
-$(ODIR)/opencl_fit_w_err.o : $(SRC)/opencl_fit_w_err.cpp $(IDIR)/opencl_fit_w_err.h
-	$(CXX) -c -o  $@ $< $(CXXFLAGS) $(LIBOPENCL)
-
-$(ODIR)/sps_mcmc.o : $(SRC)/sps_mcmc.cpp $(IDIR)/sps_mcmc.h 
-	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
-
-$(ODIR)/sps_read.o : $(SRC)/sps_read.cpp $(IDIR)/sps_read.h 
-	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
-
-$(ODIR)/sps_write.o : $(SRC)/sps_write.cpp $(IDIR)/sps_write.h 
-	$(CXX) -c -o  $@ $< $(CXXFLAGS)
 
 .PHONY: clean
 
