@@ -32,7 +32,7 @@ $(ODIR)/main_fit_sdss.o : $(SRC)/main_fit_sdss.cpp
 
 
 $(ODIR)/opencl_fit_w_err.o : $(SRC)/opencl_fit_w_err.cpp $(IDIR)/opencl_fit_w_err.h
-	$(CXX) -c -o  $@ $< $(CXXFLAGS) $(LIBOPENCL)
+	$(CXX) -c -o  $@ $< $(CXXFLAGS)
 
 $(ODIR)/sps_mcmc.o : $(SRC)/sps_mcmc.cpp $(IDIR)/sps_mcmc.h 
 	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
