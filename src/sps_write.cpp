@@ -25,7 +25,7 @@ int write_table_row(std::vector< std::vector<double > >& table_to_write, std::st
 	outfile.close();
 
 	//info out
-	std::cout<<"writing succesful: "<<std::endl;
+	std::cout<<"writing succesful: "<<outfilename<<std::endl;
 
 	return 0;
 }
@@ -51,7 +51,7 @@ int write_table_col(std::vector< std::vector<double > >& table_to_write, std::st
 	outfile.close();
 
 	//info out
-	std::cout<<"writing succesful: "<<std::endl;
+	std::cout<<"writing succesful: "<<outfilename<<std::endl;
 
 	return 0;
 }
@@ -78,7 +78,7 @@ int write_vector(std::vector<double>& vec_to_write, std::string outfilename)
 	outfile.close();
 
 	//info out
-	std::cout<<"writing succesful: "<<std::endl;
+	std::cout<<"writing succesful: "<<outfilename<<std::endl;
 
 	return 0;
 }

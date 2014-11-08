@@ -21,7 +21,15 @@ sps_mcmc::sps_mcmc()
 //config file must have 2 columns
 int sps_mcmc::read_config(std::string input_filename)
 {
+	//open file
 	std::ifstream infile(input_filename.c_str(), std::ifstream::in );
+	//check file 
+	if(!(infile)) 
+	{ 
+		std::cout<<"\nERROR CAN'T OPEN CONFIG FILE: "<<input_filename<<"\n"<<std::endl; 
+		return 1; 
+	}
+
 	std::string str;
 	while(getline(infile,str))
 	{
@@ -90,20 +98,22 @@ int sps_mcmc::read_config(std::string input_filename)
 	std::cout<<"\n\nInitial parameters guesses:"<<std::endl;
 	for (auto& param: parameters )
 	{
-		std::cout<<param.first<<"\t"<<param.second<<std::endl;
+		std::cout<<param.first<<"\t\t"<<param.second<<std::endl;
 	}
 
 	std::cout<<"\n\nFix parameters:"<<std::endl;
 	for (auto& param: fix_parameters )
 	{
-		std::cout<<param.first<<"\t"<<param.second<<std::endl;
+		std::cout<<param.first<<"\t\t"<<param.second<<std::endl;
 	}
 
 	std::cout<<"\n\nbounds :"<<std::endl;
 	for (auto& param: param_lower_bound )
 	{
-		std::cout<<param.first<<"\t"<<param.second<<"\t"<<param_upper_bound[param.first]<<std::endl;
+		std::cout<<param.first<<"\t\t"<<param.second<<"\t\t"<<param_upper_bound[param.first]<<std::endl;
 	}
+
+	std::cout<<"config file read: "<<input_filename<<"\n\n"<<std::endl;
 
 	return 0;
 }

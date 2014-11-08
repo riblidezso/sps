@@ -22,6 +22,30 @@ int main(int argc, char* argv[])
 	int error=0;
 	int MAXITER;
 
+	//declare mcmc module
+	sps_mcmc mcmc_fitter;
+
+	//read mcmc config file
+	if(argc==3)
+	{
+		//initializing parameters in mcmc module
+		error=mcmc_fitter.read_config(argv[1]);
+		if(error!=0)
+		{
+			return 1;
+		}
+		MAXITER=atoi(argv[2]);
+	}
+	else
+	{
+		std::cerr<<"\nERROR please use 2 command line arguments"<<std::endl;
+		std::cerr<<"\t 1. command line argument should point to congfig file (e.g.: test.cfg)"<<std::endl;
+		std::cerr<<"\t current directory is \"sps/bin\""<<std::endl;
+		std::cerr<<"\n\t 2. command line argument is number of iterations (e.g.: 40000)\n"<<std::endl;
+		return 1;
+	}
+
+
 	//reading models
 	sps_read model;
 	error=model.read_time_bin();
@@ -33,33 +57,13 @@ int main(int argc, char* argv[])
 	error|=model.read_model_bin_all_cont();
 	if(error!=0)
 		return 1;
-	
 	//reading spectrum to fit	
 	error|=model.usr_read_sdss_csv();
 
 
-	//initialize objects
-	opencl_fit_w_err fitter(model);
-	sps_mcmc mcmc_fitter;
 
-	//test config read
-	if(argc==3)
-	{
-		//initializing parameters in mcmc module
-		mcmc_fitter.read_config(argv[1]);
-		std::cout<<"config file read"<<std::endl;
-		MAXITER=atoi(argv[2]);
-		
-		
-	}
-	else
-	{
-		std::cerr<<"ERROR please use max 2 command line arguments"<<std::endl;
-		std::cerr<<"\t 1. command line argument should point to congfig file"<<std::endl;
-		std::cerr<<"\t current directory is \"sps/bin\""<<std::endl;
-		std::cerr<<"\n\t 2. command line argument is number of iterations (recommended: 40000)"<<std::endl;
-		return 1;
-	}
+	//initialize fitter module
+	opencl_fit_w_err fitter(model);
 
 	//resampling models
 	fitter.resample_models_2_mes(model);
