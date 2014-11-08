@@ -763,6 +763,7 @@ int opencl_fit_w_err::write_fit_result()
 	output.push_back(std::vector<double>(mes_spec_wavel.begin(),mes_spec_wavel.end()));
 	output.push_back(std::vector<double>(mes_spec.begin(),mes_spec.end()));
 	output.push_back(std::vector<double>(mes_spec_err.begin(),mes_spec_err.end()));
+	output.push_back(std::vector<double>(mes_spec_mask.begin(),mes_spec_mask.end()));
 	output.push_back(std::vector<double>(result.begin(),result.end()));
 
 	//table writing function from sps_write 

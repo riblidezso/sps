@@ -23,16 +23,17 @@ ax=fig.add_subplot(1,1,1)
 #plot fitted and measured spectra
 ########################################
 ax.plot(fit[:,0],fit[:,1],label="measured spectrum")
-ax.plot(fit[:,0],fit[:,1]-fit[:,3],label="difference")
-ax.plot(fit[:,0],fit[:,3],label="model spectrum")
+ax.plot(fit[:,0],fit[:,1]-fit[:,4],label="difference")
+ax.plot(fit[:,0],fit[:,4],label="model spectrum")
+ax.step(fit[:,0],-10*numpy.sign(fit[:,3]),label="mask")
 
 ax.set_xlim(numpy.amin(fit[:,0]),numpy.amax(fit[:,0]))
 ax.set_xlabel("wavelength")
 ax.set_ylabel("intensity")
-ax.legend()
+ax.legend(loc="best")
 
 fig.set_size_inches([16,9])
-fig.savefig("plots-python/fit.png",dpi=100)
+fig.savefig("plots-python/fit.png",dpi=300)
 
 ax.cla()
 fig.set_size_inches([8,6])
