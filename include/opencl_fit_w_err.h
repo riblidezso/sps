@@ -5,7 +5,6 @@
 #include <fstream>
 #include <vector>
 #include <sstream>
-#include <time.h>
 
 //include the opencl header
 #ifdef __APPLE__
@@ -85,7 +84,7 @@ public: //data
 	//beggining and end of execution,
 	//TODO this should be improved!!
 	//linux, mac and windows write different times 
-	clock_t t1, t2;
+	double t1, t2;
 
 //measured spectrum containers
 	//the intensity

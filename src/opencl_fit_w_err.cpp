@@ -6,6 +6,34 @@
 #include <string.h>
 
 
+//Wall clock time measurement for unix and windows
+#ifdef _WIN32
+
+#include <windows.h>
+double get_time()
+{
+    LARGE_INTEGER t, f;
+    QueryPerformanceCounter(&t);
+    QueryPerformanceFrequency(&f);
+    return (double)t.QuadPart/(double)f.QuadPart;
+}
+
+#else
+
+#include <sys/time.h>
+#include <sys/resource.h>
+
+double get_time()
+{
+    struct timeval t;
+    struct timezone tzp;
+    gettimeofday(&t, &tzp);
+    return t.tv_sec + t.tv_usec*1e-6;
+}
+
+#endif
+
+
 
 //initalizing from the read object
 opencl_fit_w_err::opencl_fit_w_err(sps_read& model)
@@ -310,7 +338,7 @@ int opencl_fit_w_err::opencl_initialize(std::string kernel_filename)
 
 	//starting clock for the whole program
 	//(it is started after all the interactive steps ended)
-	t1 = clock();
+	t1 = get_time();
 
 	//Create context
 	context = clCreateContext(NULL,numDevices, devices,NULL,NULL,&status);
@@ -811,8 +839,8 @@ int opencl_fit_w_err::clean_resources()
 		std::cerr<<"ERROR releasing objects: "<<status<<std::endl;
 
 	//stop clock	
-	t2 = clock();
-	double diff = (((double)t2 - (double)t1)/CLOCKS_PER_SEC);
+	t2 = get_time();
+	double diff = (t2 - t1);//CLOCKS_PER_SEC);
 	//time info out
 	std::cout<< "It took "<< diff <<" second(s)."<< std::endl;
 
