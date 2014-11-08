@@ -119,7 +119,9 @@ __kernel void mask_veloc_disp (
 	float curr_waveleng=wavelengths[wave];
 
 	//width of gaussian in wavelengths
-	float sig_lam = curr_waveleng * vsig;
+	//speed of light hardcoded, but no problem, that wont change
+	//vsig is in km/sec
+	float sig_lam = curr_waveleng * vsig / 299792.458 ;
 
 	//result
 	float loc_result=0;
