@@ -79,16 +79,12 @@ int opencl_fit_w_err::resample_models_2_mes(sps_read& model)
 	if( imf == "chabrier")
 		offset=0;
 	else if(imf=="salpeter")
-	{
-		std::cerr<<"\n\nERROR: offset >6 is not enabled (too small resampled model vector!!\n"<<std::endl;
 		offset=6;
-		return 1;
-	}
 
 	//resize the vector that will store the resampled model
 	//this is a huge contigous vector because this makes it
 	//easy to pass it to GPU (only have to give pointer and size)
-	resampled_model.resize(ntimesteps * mes_nspecsteps * 12);
+	resampled_model.resize(ntimesteps * mes_nspecsteps * 6);
 
 	//wd, wu are weigths for interpolation, delta is wavelength distance
 	double wd,wu,delta;
@@ -139,25 +135,17 @@ int opencl_fit_w_err::resample_models_2_mes(sps_read& model)
 
 
 		//the intepolation
-		
-		//loop over timesteps
-		for(int j=0;j<ntimesteps;j++)
+		//loop over different metallicity models
+		for(int k=offset;k<offset+6;k++)
 		{
-			//loop over different metallicity models
-			for(int k=offset;k<offset+6;k++)
+			//loop over timesteps
+			for(int j=0;j<ntimesteps;j++)
 			{
-				//changing indices for locality on GPU
-				//would be interesting to check if this is
-				//an actual improvement or not
-
 				//calculate positions in the big continous models vector
-				//place=mes_nspecsteps*ntimesteps*k + mes_nspecsteps*j;
-				place=6*ntimesteps*i + 6*j + k;
+				place=mes_nspecsteps*ntimesteps*k + mes_nspecsteps*j;
 				place1=nspecsteps*ntimesteps*k + nspecsteps*j;
 				//interpolation
-
-				resampled_model[place]=wd*model.model_cont[low+place1]+wu*model.model_cont[high+place1];
-				//resampled_model[place+i]=wd*model.model_cont[low+place1]+wu*model.model_cont[high+place1];
+				resampled_model[place+i]=wd*model.model_cont[low+place1]+wu*model.model_cont[high+place1];
 			}
 		}
 	}
