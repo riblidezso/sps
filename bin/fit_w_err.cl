@@ -58,9 +58,9 @@ __kernel void spec_gen (
 	//linear interpol in log(z)
 	for(i=0; i<ntimesteps ;i++)
 	{
-		place=wave+i*nspecsteps;
-		place1=modelno*modelsize+place;
-		place2=place1+modelsize;
+		place=wave*ntimesteps+i;
+		place1=6*ntimesteps*wave + 6*i + modelno;
+		place2=place1+1;
 		model[place]= wd*res_model[place1] + wu*res_model[place2] ;
 	}
 	
@@ -71,24 +71,20 @@ __kernel void spec_gen (
 	exponent=pow(wavelengths[wave]/5500.0,-0.7);
 
 	float temp=0;
-	temp+= time[0] * model[wave] * exp((time[0]-age)/sfr_tau);
+	temp+= time[0] * model[wave*ntimesteps] * exp((time[0]-age)/sfr_tau);
 	for(i=1; ( time[i] <= 10e7 ) && ( time[i] <= age ) ;i++)
 	{
-		temp+= (time[i]-time[i-1]) * model[ i*nspecsteps + wave] * exp((time[i]-age)/sfr_tau);
+		temp+= (time[i]-time[i-1]) * model[ wave*ntimesteps+i ] * exp((time[i]-age)/sfr_tau);
 	}
 
 	float temp1=0;
 	for(; ( time[i] < age ) && ( (i+1) <ntimesteps ) ;i++)
 	{
-		temp1+= (time[i]-time[i-1]) * model[ i*nspecsteps + wave] * exp((time[i]-age)/sfr_tau);
+		temp1+= (time[i]-time[i-1]) * model[ wave*ntimesteps+i ] * exp((time[i]-age)/sfr_tau);
 	}
 
 	//the last step foor smoothness with linear interpol
-//old one
-//	temp1+= ((age-time[i-1]) * ( (time[i]-age) * model[(i-1)*nspecsteps + wave] + (age-time[i-1]) * model[i*nspecsteps + wave] )) / (time[i]-time[i-1]) ;
-
-//test
-	temp1+= (age-time[i-1]) *  model[i*nspecsteps + wave]  ;
+	temp1+= (age-time[i-1]) *  model[ wave*ntimesteps+i ]  ;
 
 	result_no_vel[wave]= temp*exp(-exponent*dust_tau_v) + temp1*exp(-exponent*dust_tau_v*dust_mu);
 	
