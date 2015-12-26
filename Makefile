@@ -3,7 +3,7 @@ CXX = g++
 LINK = $(CXX)
 
 # Flags
-CXXFLAGS = -std=c++11 -I$(IDIR) -I../NVIDIA_GPU_COMPUTING_SDK/OpenCL/common/inc
+CXXFLAGS = -std=c++11 -I$(IDIR) -I../NVIDIA_GPU_COMPUTING_SDK/OpenCL/common/inc -W -Wall
 
 #Opencl library place (Apple)
 ifeq ($(shell uname), Darwin) # Apple
@@ -23,21 +23,22 @@ IDIR = include
 
 
 #Building fitter
-$(BIN)/fit_sdss : $(ODIR)/main_fit_sdss.o $(ODIR)/opencl_fit_w_err.o $(ODIR)/sps_mcmc.o $(ODIR)/sps_read.o  $(ODIR)/sps_write.o
+$(BIN)/fit_spectrum : $(ODIR)/fit_spectrum.o $(ODIR)/spectrum_generator.o $(ODIR)/mcmc.o $(ODIR)/sps_data.o  $(ODIR)/sps_write.o $(ODIR)/sps_options.o
 	$(LINK) -o $@ $^ $(LIBOPENCL)
 
-
-$(ODIR)/main_fit_sdss.o : $(SRC)/main_fit_sdss.cpp
+$(ODIR)/fit_spectrum.o : $(SRC)/fit_spectrum.cpp
 	$(CXX) -c -o  $@ $< $(CXXFLAGS)
 
-
-$(ODIR)/opencl_fit_w_err.o : $(SRC)/opencl_fit_w_err.cpp $(IDIR)/opencl_fit_w_err.h
+$(ODIR)/spectrum_generator.o : $(SRC)/spectrum_generator.cpp $(IDIR)/spectrum_generator.h
 	$(CXX) -c -o  $@ $< $(CXXFLAGS)
 
-$(ODIR)/sps_mcmc.o : $(SRC)/sps_mcmc.cpp $(IDIR)/sps_mcmc.h 
+$(ODIR)/sps_options.o : $(SRC)/sps_options.cpp $(IDIR)/sps_options.h 
 	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
 
-$(ODIR)/sps_read.o : $(SRC)/sps_read.cpp $(IDIR)/sps_read.h 
+$(ODIR)/mcmc.o : $(SRC)/mcmc.cpp $(IDIR)/mcmc.h 
+	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
+
+$(ODIR)/sps_data.o : $(SRC)/sps_data.cpp $(IDIR)/sps_data.h 
 	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
 
 $(ODIR)/sps_write.o : $(SRC)/sps_write.cpp $(IDIR)/sps_write.h 
