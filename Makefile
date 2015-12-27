@@ -3,7 +3,7 @@ CXX = g++
 LINK = $(CXX)
 
 # Flags
-CXXFLAGS = -std=c++11 -I$(IDIR) -I../NVIDIA_GPU_COMPUTING_SDK/OpenCL/common/inc -W -Wall
+CXXFLAGS = -std=c++11 -I$(IDIR) -W -Wall
 
 #Opencl library place (Apple)
 ifeq ($(shell uname), Darwin) # Apple
