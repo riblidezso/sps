@@ -6,6 +6,8 @@
 #include <vector>
 #include <sstream>
 #include <map>
+#include <chrono>
+#include <string.h>
 
 //include the opencl header
 #ifdef __APPLE__

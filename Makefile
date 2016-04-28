@@ -3,7 +3,7 @@ CXX = g++
 LINK = $(CXX)
 
 # Flags
-CXXFLAGS = -std=c++11 -I$(IDIR) -W -Wall
+CXXFLAGS = -std=c++11 -I$(IDIR) -I$(CL_H) -W -Wall
 
 #Opencl library place (Apple)
 ifeq ($(shell uname), Darwin) # Apple
@@ -17,6 +17,7 @@ BIN = bin
 ODIR = bin/obj
 SRC = src
 IDIR = include
+CL_H = /usr/local/cuda-7.5/targets/x86_64-linux/include/
 
 #Build rules
 # kicsit fura de ez van
