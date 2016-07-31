@@ -59,14 +59,11 @@ $(ODIR)/convert_ascii_2_bin.o : $(SRC)/convert_ascii_2_bin.cpp $(IDIR)/convert_a
 
  
 #Building spectrum generator
-$(BIN)/spec_gen : $(ODIR)/main_spec_gen.o  $(ODIR)/spec_gen.o $(ODIR)/sps_read.o 
-	$(LINK) -o $@ $^
+$(BIN)/generate_spec : $(ODIR)/generate_spec.o  $(ODIR)/spectrum_generator.o $(ODIR)/mcmc.o $(ODIR)/sps_data.o  $(ODIR)/sps_write.o $(ODIR)/sps_options.o
+	$(LINK) -o $@ $^ $(LIBOPENCL)
 
-$(ODIR)/main_spec_gen.o : $(SRC)/main_spec_gen.cpp
-	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
-
-$(ODIR)/spec_gen.o : $(SRC)/spec_gen.cpp $(IDIR)/spec_gen.h
-	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
+$(ODIR)/generate_spec.o : $(SRC)/generate_spec.cpp
+	$(CXX) -c -o  $@ $< $(CXXFLAGS)
 
 #$(ODIR)/sps_read.o : $(SRC)/sps_read.cpp $(IDIR)/sps_read.h 
 #	$(CXX) -c -o  $@ $< $(CXXFLAGS) 
