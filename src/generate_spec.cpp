@@ -4,9 +4,6 @@
 #include "sps_data.h"
 #include "spectrum_generator.h"
 
-#include <thread>
-#include <chrono>
-
 int main(int argc, char* argv[])
 {
     int error=0;
@@ -89,8 +86,6 @@ int main(int argc, char* argv[])
     
         //get the result
         results.push_back(my_spec_gen.get_result());
-        
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     
     ///////////////////////////////////////////////////////////////
