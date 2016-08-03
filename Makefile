@@ -9,7 +9,7 @@ CXXFLAGS = -std=c++11 -I$(IDIR) -I$(CL_H) -W -Wall
 ifeq ($(shell uname), Darwin) # Apple
     LIBOPENCL=-framework OpenCL
 else       # Linux
-    LIBOPENCL=-lOpenCL
+    LIBOPENCL=-L /home/ribli/tools/AMDAPPSDK-3.0/lib/x86_64/ -lOpenCL
 endif
 
 # Paths
@@ -17,7 +17,8 @@ BIN = bin
 ODIR = bin/obj
 SRC = src
 IDIR = include
-CL_H = /usr/local/cuda-7.5/targets/x86_64-linux/include/
+CL_H = /home/ribli/tools/AMDAPPSDK-3.0/include/ 
+#/usr/local/cuda-7.5/targets/x86_64-linux/include/
 
 #Build rules
 # kicsit fura de ez van
