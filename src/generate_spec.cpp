@@ -12,10 +12,11 @@ int main(int argc, char* argv[])
     /*
      Check command line arguments
      */
-    if (argc!=3){
-        std::cerr<<"\nERROR please use 2 command line arguments"<<std::endl;
+    if (argc!=4){
+        std::cerr<<"\nERROR please use 3 command line arguments"<<std::endl;
         std::cerr<<"\t1: congfig file (e.g.: test.cfg)"<<std::endl;
         std::cerr<<"\t2: param file (e.g.: test_params.tsv)"<<std::endl;
+        std::cerr<<"\t3: output file (e.g.: results.tsv)"<<std::endl;
         exit(1);
     }
     
@@ -77,22 +78,32 @@ int main(int argc, char* argv[])
      */
     
     std::vector< std::vector<cl_float> > results;
+    int i=0;
     for (auto params : param_list){
         //set params
         my_spec_gen.set_params(params);
         
         //generate spectrum in device
         my_spec_gen.generate_spectrum();
-    
+        
         //get the result
         results.push_back(my_spec_gen.get_result());
+        
+        //report
+        i++;
+        if( (i % 1000) == 0 )
+            std::cout<<i<<" spectra generated "<<std::endl;
+        if( (i % 50) == 0 ){
+            std::cout<<".";
+            std::cout.flush();
+        }
     }
     
     ///////////////////////////////////////////////////////////////
     /*
      Write results
      */
-    my_spec_gen.write_specs(results, "../output/specs.tsv");
+    my_spec_gen.write_specs(results, argv[3]);
     
     
     ///////////////////////////////////////////////////////////////
