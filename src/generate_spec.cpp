@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
      */
     if (argc!=4){
         std::cerr<<"\nERROR please use 3 command line arguments"<<std::endl;
-        std::cerr<<"\t1: congfig file (e.g.: test.cfg)"<<std::endl;
+        std::cerr<<"\t1: config file (e.g.: test.cfg)"<<std::endl;
         std::cerr<<"\t2: param file (e.g.: test_params.tsv)"<<std::endl;
         std::cerr<<"\t3: output file (e.g.: results.tsv)"<<std::endl;
         exit(1);
@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
     
     ///////////////////////////////////////////////////////////////
     /*
-     Specturm generator class
+     Spectrum generator class
      */
     
     spectrum_generator my_spec_gen(my_sps_data);
