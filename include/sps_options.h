@@ -6,6 +6,7 @@
 #include <vector>
 #include <sstream>
 #include <string>
+#include <map>
 
 /*
     class for options, and reading config file
@@ -25,6 +26,9 @@ public:
     
     //read config file
     int read_config(std::string config_filename);
+    
+    //read param file
+    std::vector<std::map<std::string,double> > read_param_file(std::string infilename);
 };
 
 #endif

@@ -48,8 +48,61 @@ int sps_options::read_config(std::string input_filename)
                 this->sdss_measurement_fname = tempvec[1];
             }
         }
+        
     }
     infile.close();
     
     return 0;
 }
+
+
+
+
+//read parameter file
+std::vector<std::map<std::string,double> > sps_options::read_param_file(std::string infilename){
+    //open file
+    std::ifstream infile(infilename.c_str());
+    //check file
+    if(! infile.is_open() )
+    {
+        std::cerr<<"\nERROR CAN'T OPEN PARAMETER FILE: "<<infilename<<"\n"<<std::endl;
+        exit(1);
+    }
+    
+    //read param names
+    std::string line,param_name;
+    std::stringstream temp_sstr;
+    std::vector<std::string> param_names;
+    getline(infile,line);
+    temp_sstr<<line;
+    while(temp_sstr>>param_name){
+        param_names.push_back(param_name);
+    }
+    
+    //readi params
+    std::vector<std::map<std::string,double> > params;
+    while ( getline (infile,line) ){
+        std::map<std::string,double> temp_params;
+        double value;
+        
+        temp_sstr.clear();
+        temp_sstr<<line;
+        
+        int i=0;
+        while(temp_sstr>>value){
+            temp_params.insert(std::pair<std::string,double>(param_names[i],value));
+            i++;
+        }
+        params.push_back(temp_params);
+    }
+    
+    //for(auto v : params){
+    //    std::cout<<v["a"]<<" "<<v["b"]<<" "<<v["c"]<<std::endl;
+    //}
+    
+    infile.close();
+    
+    return params;
+    
+}
+

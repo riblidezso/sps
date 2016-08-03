@@ -62,6 +62,9 @@ public: //functions
 	//if the result is the best one yet, it reads it back
 	//from GPU to CPU memmory
 	int read_best_result();
+    
+    //return result
+    std::vector<cl_float> get_result();
 
 //functions called at the end
 	//deletes buffers, and opencl objects
@@ -69,6 +72,9 @@ public: //functions
 	
 	//writes the fitted, and the measured model
 	int write_fit_result();
+    
+    int write_specs(std::vector< std::vector<cl_float> >& results,
+                    std::string out_fname);
 
 
 

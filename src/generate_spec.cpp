@@ -1,10 +1,11 @@
 #include <iostream>
 
 #include "sps_options.h"
-#include "mcmc.h"
 #include "sps_data.h"
 #include "spectrum_generator.h"
 
+#include <thread>
+#include <chrono>
 
 int main(int argc, char* argv[])
 {
@@ -14,12 +15,12 @@ int main(int argc, char* argv[])
     /*
      Check command line arguments
      */
-    if (argc!=2){
-        std::cerr<<"\nERROR please use 1 command line argument"<<std::endl;
-        std::cerr<<"\t congfig file (e.g.: test.cfg)"<<std::endl;
+    if (argc!=3){
+        std::cerr<<"\nERROR please use 2 command line arguments"<<std::endl;
+        std::cerr<<"\t1: congfig file (e.g.: test.cfg)"<<std::endl;
+        std::cerr<<"\t2: param file (e.g.: test_params.tsv)"<<std::endl;
         exit(1);
     }
-    
     
     ///////////////////////////////////////////////////////////////
     /*
@@ -34,15 +35,12 @@ int main(int argc, char* argv[])
     
     ///////////////////////////////////////////////////////////////
     /*
-     MCMC fitter class
+     Read param file
      */
+    std::vector<std::map<std::string,double> > param_list;
+    param_list=my_sps_options.read_param_file(argv[2]);
     
-    mcmc mcmc_fitter;
-    
-    //read mcmc fitting parameters from config file
-    mcmc_fitter.read_config(argv[1]);
-    
-    
+
     ///////////////////////////////////////////////////////////////
     /*
      Read data
@@ -69,7 +67,7 @@ int main(int argc, char* argv[])
     spectrum_generator my_spec_gen(my_sps_data);
     
     //basic stuff
-    my_spec_gen.opencl_initialize("fit_w_err.cl",my_sps_options.platform,my_sps_options.device);
+    my_spec_gen.opencl_initialize("fit_w_err.cl",my_sps_options.device,my_sps_options.platform);
     //kernel and memory
     my_spec_gen.opencl_kern_mem();
     //setting the device memories of kernels
@@ -78,24 +76,28 @@ int main(int argc, char* argv[])
     
     ///////////////////////////////////////////////////////////////
     /*
-    Generate spectrum
+    Generate spectra
      */
-
-    //set params
-    my_spec_gen.set_params(mcmc_fitter.parameters);
+    
+    std::vector< std::vector<cl_float> > results;
+    for (auto params : param_list){
+        //set params
+        my_spec_gen.set_params(params);
         
-    //generate spectrum
-    my_spec_gen.generate_spectrum();
+        //generate spectrum in device
+        my_spec_gen.generate_spectrum();
     
-    //read back model to host
-    my_spec_gen.read_best_result();
-    
+        //get the result
+        results.push_back(my_spec_gen.get_result());
+        
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
     
     ///////////////////////////////////////////////////////////////
     /*
      Write results
      */
-    my_spec_gen.write_fit_result();
+    my_spec_gen.write_specs(results, "../output/specs.tsv");
     
     
     ///////////////////////////////////////////////////////////////

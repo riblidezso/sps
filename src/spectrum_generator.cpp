@@ -36,12 +36,11 @@ spectrum_generator::spectrum_generator(sps_data& model)
 
 }
 
-
 // load the kernel file into a null terminated string 
 int spectrum_generator::convertToString(std::string infilename, std::string& str)
 {
 	//open file in binary i/o 
-	std::ifstream infile(infilename.c_str(), std::ios::binary |std::ios::ate); 
+	std::ifstream infile(infilename.c_str(),  std::ios::binary |std::ios::ate);
 	//check file 
 	if(!(infile)) 
 	{ 
@@ -142,6 +141,7 @@ int spectrum_generator::opencl_initialize(std::string kernel_filename,
         }
         else{
             std::cerr<<"ERROR invalid platform number"<<std::endl;
+            std::cerr<<input_platform<<std::endl;
             exit(1);
         }
 		delete[] platforms;
@@ -498,16 +498,37 @@ int spectrum_generator::set_kern_arg()
 	return status;
 }
 
-//set params (also type conversion if needed)
+//set params
 int spectrum_generator::set_params( std::map<std::string,double>& parameters ){
     
-    dust_tau_v = parameters["dust_tau_v"];
-    dust_mu = parameters["dust_mu"];
-	sfr_tau = parameters["sfr_tau"];
-	age = parameters["age"];
-	metall = parameters["metall"];
-	vdisp = parameters["vdisp"];
+    //set params if they are in the input map
+    std::map<std::string,double>::iterator it;
+    it= parameters.find("dust_tau_v");
+    if(it != parameters.end()){
+        dust_tau_v = parameters["dust_tau_v"];
+    }
+    it= parameters.find("dust_mu");
+    if(it != parameters.end()){
+        dust_mu = parameters["dust_mu"];
+    }
+    it= parameters.find("sfr_tau");
+    if(it != parameters.end()){
+        sfr_tau = parameters["sfr_tau"];
+    }
+    it= parameters.find("age");
+    if(it != parameters.end()){
+        age = parameters["age"];
+    }
+    it= parameters.find("metall");
+    if(it != parameters.end()){
+        metall = parameters["metall"];
+    }
+    it= parameters.find("vdisp");
+    if(it != parameters.end()){
+        vdisp = parameters["vdisp"];
+    }
     
+    //change kernel params
     this->change_kernel_params();
 
 	return 0;
@@ -689,6 +710,37 @@ int spectrum_generator::read_best_result()
 		std::cout<<"ERROR reading buffer: "<<status<<std::endl;
 
 	return status;	
+}
+
+
+//return the modeled spectrum
+std::vector<cl_float> spectrum_generator::get_result()
+{
+    //result
+    std::vector<cl_float> res(mes_nspecsteps);
+    
+    //error
+    cl_int status=0;
+    
+    //read from GPU (device)
+    status = clEnqueueReadBuffer(commandQueue, result_d, CL_TRUE, 0, mes_nspecsteps * sizeof(cl_float) , res.data(), 0, NULL, NULL);
+    
+    //error check
+    if (status!=0)
+        std::cout<<"ERROR reading buffer: "<<status<<std::endl;
+    
+    return res;
+}
+
+int spectrum_generator::write_specs(std::vector< std::vector<cl_float> >& results,
+                                    std::string out_fname){
+    std::vector<std::vector <double> > output;
+    output.push_back(std::vector<double>(mes_spec_wavel.begin(),mes_spec_wavel.end()));
+    for (auto res : results){
+        output.push_back(std::vector<double>(res.begin(),res.end()));
+    }
+    write_table_col(output,out_fname);
+    return 0;
 }
 
 int spectrum_generator::write_fit_result()
