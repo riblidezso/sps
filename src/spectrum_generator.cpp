@@ -71,6 +71,14 @@ int spectrum_generator::opencl_initialize(std::string kernel_filename,
                                           int input_device, int input_platform){
 	//error variable
 	cl_int	status=0;
+    
+    //get kernel file full path
+    std::string path=getenv("SPSFAST_PATH");
+    std::stringstream ss;
+    std::string kernel_full_path;
+    ss<<path<<"/bin/"<<kernel_filename;
+    ss>>kernel_full_path;
+    
 
 	//Getting OpenCL platforms and choose an available one.
 	cl_uint numPlatforms;				//the NO. of platforms
@@ -257,9 +265,8 @@ int spectrum_generator::opencl_initialize(std::string kernel_filename,
 	}
 
 	//open kernel file and convert it to char array
-	//const char *filename = kernel_filename.c_str();
 	std::string sourceStr;
-	status = convertToString(kernel_filename, sourceStr);
+	status = convertToString(kernel_full_path, sourceStr);
 	const char *source = sourceStr.c_str();
 	size_t sourceSize[] = {strlen(source)};
 

@@ -1,3 +1,9 @@
+### Export enviroment variable
+
+```
+export SPSFAST_PATH=/path/to/sps/root/
+```
+
 ### generating spectra
 
 - compile:

@@ -23,7 +23,7 @@ int sps_data::read_binary_sps_model(){
 
 
 /*
-    read the binary sps model data
+    read measurement
  */
 int sps_data::read_measurement(std::string input_fname){
     if(input_fname!="none"){
@@ -200,15 +200,14 @@ int sps_data::read_sdss_measurement(std::string infilename ){
 //
 int sps_data::read_model_bin_all_cont(){
 	#define NO_METALL 6
-	#define PATH "../input/bin/"
-
+    
 	char metall;
 	std::string path;
 	std::string imf;
 	std::string filename;
 	
+    path=getenv("SPSFAST_PATH");
 	imf="chab";
-	path=PATH;
 	models.resize(2*NO_METALL);
 
     std::cout<<"reading models ";
@@ -217,7 +216,7 @@ int sps_data::read_model_bin_all_cont(){
 			metall='2'+j;
 			//reading binary model
 			std::stringstream filename_sstr;
-			filename_sstr<<path<<imf<<metall<<".bin";
+			filename_sstr<<path<<"/input/bin/"<<imf<<metall<<".bin";
 			filename_sstr>>filename;
 			read_model_bin_cont(filename);
             std::cout<<"..."<< std::flush;
@@ -262,14 +261,12 @@ int sps_data::read_model_bin_cont( std::string infilename){
 int sps_data::read_wavel_bin(){
     std::cout<<"reading wavelengths ... "<<std::endl;
     
-#define PATH "../input/bin/"
-    
     std::string path;
     std::string filename;
     
-    path=PATH;
+    path=getenv("SPSFAST_PATH");
     std::stringstream filename_sstr;
-    filename_sstr<<path<<"wavel.bin";
+    filename_sstr<<path<<"/input/bin/wavel.bin";
     filename_sstr>>filename;
     
     std::ifstream infile(filename.c_str(), std::ios::binary |std::ios::ate);
@@ -296,14 +293,12 @@ int sps_data::read_wavel_bin(){
 int sps_data::read_time_bin(){
     std::cout<<"reading timesteps ... "<<std::endl;
     
-#define PATH "../input/bin/"
-    
     std::string path;
     std::string filename;
     
-    path=PATH;
+    path=getenv("SPSFAST_PATH");
     std::stringstream filename_sstr;
-    filename_sstr<<path<<"time.bin";
+    filename_sstr<<path<<"/input/bin/time.bin";
     filename_sstr>>filename;
     
     std::ifstream infile(filename.c_str(), std::ios::binary |std::ios::ate);
@@ -323,8 +318,6 @@ int sps_data::read_time_bin(){
     
     return 0;
 }
-
-
 
 
 

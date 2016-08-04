@@ -79,7 +79,7 @@ std::vector<std::map<std::string,double> > sps_options::read_param_file(std::str
         param_names.push_back(param_name);
     }
     
-    //readi params
+    //reading params
     std::vector<std::map<std::string,double> > params;
     while ( getline (infile,line) ){
         std::map<std::string,double> temp_params;
@@ -95,10 +95,6 @@ std::vector<std::map<std::string,double> > sps_options::read_param_file(std::str
         }
         params.push_back(temp_params);
     }
-    
-    //for(auto v : params){
-    //    std::cout<<v["a"]<<" "<<v["b"]<<" "<<v["c"]<<std::endl;
-    //}
     
     infile.close();
     
