@@ -1,44 +1,91 @@
 #include "sps_data.h"
 
 /*
+ initialise data
+    - read the model data
+    - read the measurement
+    - resample models to measuremement wavelengths
+ */
+sps_data::sps_data(std::string measurement_fname){
+    std::string imf="chabrier";
+    
+    //read model
+    this->read_binary_sps_model(imf);
+    
+    //read a measurement file
+    this->read_measurement(measurement_fname);
+    
+    //resample models to measurement file
+    this->resample_models_2_mes(imf);
+    
+}
+
+//////////////////////////////////////////
+
+/*
     read the binary sps model data
 */
-int sps_data::read_binary_sps_model(){
-    
+int sps_data::read_binary_sps_model(std::string imf){
     //read time data
-    if( this->read_time_bin() != 0 ){
-        exit(1);
-    }
+    this->read_time_bin();
+    
     //read wavelength data
-    if( this->read_wavel_bin() != 0 ){
-        exit(1);
-    }
+    this->read_wavel_bin();
+    
     //read models
-    if( this->read_model_bin_all_cont() != 0 ){
+    this->read_model_bin_all_cont(imf);
+    
+    return 0;
+}
+
+
+
+/*
+ read measurement from sdss csv file
+ */
+int sps_data::read_measurement(std::string infilename ){
+    std::cout<<"reading measurement ... "<<std::endl;
+    
+    //open file
+    std::ifstream infile(infilename.c_str());
+    if(!infile.is_open()){
+        std::cout<<"\nERROR CAN'T OPEN FILE: "<<infilename<<"\n"<<std::endl;
         exit(1);
     }
     
+    //loop over lines
+    std::string line;
+    while(getline(infile,line)){
+        //change seperator to space from comma
+        for(size_t j=0;j<line.size();j++){
+            if (line[j]==','){
+                line[j]=' ';
+            }
+        }
+        //parse numbers in the line
+        std::stringstream temp_sstr;
+        temp_sstr<<line;
+        if (line[0] != '#' ){ //skip header
+            double temp=0;
+            temp_sstr>>temp;
+            this->mes_spec_wavel.push_back(temp);
+            temp_sstr>>temp;
+            this->mes_spec.push_back(temp);
+            temp_sstr>>temp;
+            this->mes_spec_err_l.push_back(temp);
+            temp_sstr>>temp;
+            this->mes_spec_err_h.push_back(temp);
+            temp_sstr>>temp;
+            this->mes_spec_mask.push_back(temp);
+        }
+    }
+    infile.close();
     return 0;
 }
 
 
 /*
-    read measurement
- */
-int sps_data::read_measurement(std::string input_fname){
-    if(input_fname!="none"){
-        this->read_sdss_measurement(input_fname);
-    }
-    else{
-        this->usr_read_sdss_csv();
-    }
-    
-    return 0;
-}
-
-
-/*
-    resamples all the models to the wavelengths of the measurement
+    Resample all the models to the wavelengths of the measurement
  */
 int sps_data::resample_models_2_mes(std::string imf)
 {
@@ -80,7 +127,7 @@ int sps_data::resample_models_2_mes(std::string imf)
             if (high==nspecsteps){
                 std::cerr<<"\nERROR measurement wavelength"<<mes_spec_wavel[i]<<"\n";
                 std::cerr<<"can't be interpolated from model wavelength points\n\n";
-                return 1;
+                exit(1);
             }
         }
         
@@ -89,7 +136,7 @@ int sps_data::resample_models_2_mes(std::string imf)
         if (high==0){
             std::cerr<<"\nERROR measurement wavelength"<<mes_spec_wavel[i]<<"\n";
             std::cerr<<"can't be interpolated from model wavelength points\n\n";
-            return 1;
+            exit(1);
         }
         
         //the one before the first bigger is definitely smaller
@@ -120,109 +167,27 @@ int sps_data::resample_models_2_mes(std::string imf)
 ///////////////////////////////////////////////////////////////
 
 
+
 /*
-    read sdss measurement with user input
- */
-int sps_data::usr_read_sdss_csv()
-{
-    bool tryagain;
-    std::cout<<"\nGetting sdss csv spectrum to fit"<<std::endl;
-    
-    do{
-        tryagain=false;
-        try{
-            // get filename
-            std::cout<<"input filename: (current directory is \"sps/input/\")\n";
-            std::string temp_line;
-            getline(std::cin,temp_line);
-            std::stringstream temp_sstr;
-            temp_sstr<<"../input/";
-            temp_sstr<<temp_line;
-            
-            std::string infilename;
-            temp_sstr>>infilename;
-            this->read_sdss_measurement(infilename);
-            
-        }catch (int ex){
-            if (ex==1){tryagain=true;}
-        }
-    }while(tryagain);
-    
-    std::cout<<"spectrum read\n";
-    return 0;
-}
-
-
-
-int sps_data::read_sdss_measurement(std::string infilename ){
-    std::cout<<"reading measurement ... "<<std::endl;
-    
-    std::ifstream infile(infilename.c_str());
-    // check filename
-    if(!(infile)){
-        std::cout<<"\nERROR CAN'T OPEN FILE: "<<infilename<<"\n"<<std::endl;
-        throw 1;
-    }
-    
-    std::string temp_line;
-    while(getline(infile,temp_line)){
-        //this is lame
-        for(size_t j=0;j<temp_line.size();j++){
-            if (temp_line[j]==','){
-                temp_line[j]=' ';
-            }
-        }
-        
-        std::stringstream temp_sstr;
-        temp_sstr<<temp_line;
-        if (temp_line[0] != '#' ){
-            double temp=0;
-            temp_sstr>>temp;
-            this->mes_spec_wavel.push_back(temp);
-            temp_sstr>>temp;
-            this->mes_spec.push_back(temp);
-            temp_sstr>>temp;
-            this->mes_spec_err_l.push_back(temp);
-            temp_sstr>>temp;
-            this->mes_spec_err_h.push_back(temp);
-            temp_sstr>>temp;
-            this->mes_spec_mask.push_back(temp);
-        }
-    }
-    infile.close();
-    
-    return 0;
-}
-
-
-///
-//Reading all models from binary file 
-//
-int sps_data::read_model_bin_all_cont(){
-	#define NO_METALL 6
-    
-	char metall;
-	std::string path;
-	std::string imf;
-	std::string filename;
-	
-    path=getenv("SPSFAST_PATH");
-	imf="chab";
-	models.resize(2*NO_METALL);
+Reading models with every metallicity from binary files into one contiguous vector
+*/
+int sps_data::read_model_bin_all_cont(std::string imf){
+	#define NO_METALL_MODELS 6
 
     std::cout<<"reading models ";
-	for(int i=0;i<2;i++){
-		for(int j=0;j<NO_METALL;j++){
-			metall='2'+j;
-			//reading binary model
-			std::stringstream filename_sstr;
-			filename_sstr<<path<<"/input/bin/"<<imf<<metall<<".bin";
-			filename_sstr>>filename;
-			read_model_bin_cont(filename);
-            std::cout<<"..."<< std::flush;
-		}
-		//second path:
-		imf="salp";
+
+    //loop over metallicities
+    for(int metall=2;metall<NO_METALL_MODELS+2;metall++){
+        //create filename
+        std::string path=getenv("SPSFAST_PATH");
+        std::stringstream filename_sstr;
+        std::string filename;
+        filename_sstr<<path<<"/input/bin/"<<imf<<metall<<".bin";
+        filename_sstr>>filename;
+        //read file
+        read_model_bin_cont(filename);
+        //report
+        std::cout<<"..."<<std::flush;
 	}
 	std::cout<<std::endl;
 	return 0;
@@ -230,56 +195,56 @@ int sps_data::read_model_bin_all_cont(){
 
 
 
-
-///
-//Reading one model from binary file
-//
+/*
+ Read one model from binary file
+*/
 int sps_data::read_model_bin_cont( std::string infilename){
+    //open file
     std::ifstream infile(infilename.c_str(), std::ios::binary |std::ios::ate);
-    //	CHECKING FILENAME
-    if(!(infile)){
+    if(!infile.is_open()){
         std::cout<<"ERROR CAN'T OPEN FILE: "<<infilename<<std::endl;
-        return 1;
+        exit(1);
     }
-    std::ifstream::pos_type size;
-    size = infile.tellg();
-    
-    size_t begin=model_cont.size();
+    //get size of file, and expand original container
+    std::ifstream::pos_type size = infile.tellg();
+    size_t begin = model_cont.size();
     model_cont.resize(begin + size/sizeof(double));
     
+    //read whole file
     infile.seekg (0, std::ios::beg);
-    infile.read (reinterpret_cast<char*>(&model_cont[begin]), size);
+    infile.read(reinterpret_cast<char*>(&model_cont[begin]), size);
     infile.close();
     
     return 0;
 }
 
 
-///
-//Reading wavelengths from binary file
-//
+/*
+//Read wavelengths from binary file
+*/
 int sps_data::read_wavel_bin(){
     std::cout<<"reading wavelengths ... "<<std::endl;
     
-    std::string path;
+    //create filename
+    std::string path=getenv("SPSFAST_PATH");
     std::string filename;
-    
-    path=getenv("SPSFAST_PATH");
     std::stringstream filename_sstr;
     filename_sstr<<path<<"/input/bin/wavel.bin";
     filename_sstr>>filename;
     
+    //open
     std::ifstream infile(filename.c_str(), std::ios::binary |std::ios::ate);
-    //	CHECKING FILENAME
-    if(!(infile)){
+    if(!infile.is_open()){
         std::cout<<"ERROR CAN'T OPEN FILE: "<<filename<<std::endl;
-        return 1;
+        exit(1);
     }
+    
+    //get size and resize container
     std::ifstream::pos_type size;
     size = infile.tellg();
-    
     wavelengths.resize(size/sizeof(double));
     
+    //read whole file
     infile.seekg (0, std::ios::beg);
     infile.read (reinterpret_cast<char*>(&wavelengths[0]), size);
     infile.close();
@@ -287,150 +252,35 @@ int sps_data::read_wavel_bin(){
     return 0;
 }
 
-///
-//Reading timesteps from binary file
-//
+/*
+ Read timesteps from binary file
+*/
 int sps_data::read_time_bin(){
     std::cout<<"reading timesteps ... "<<std::endl;
     
-    std::string path;
+    //create filename
+    std::string path=getenv("SPSFAST_PATH");
     std::string filename;
-    
-    path=getenv("SPSFAST_PATH");
     std::stringstream filename_sstr;
     filename_sstr<<path<<"/input/bin/time.bin";
     filename_sstr>>filename;
     
+    //open file
     std::ifstream infile(filename.c_str(), std::ios::binary |std::ios::ate);
-    //	CHECKING FILENAME
-    if(!(infile)){
+    if(!infile.is_open()){
         std::cout<<"ERROR CAN'T OPEN FILE: "<<filename<<std::endl;
-        return 1;
+        exit(1);
     }
+    
+    //get size and resize container
     std::ifstream::pos_type size;
     size = infile.tellg();
-    
     time.resize(size/sizeof(double));
     
+    //read whole file
     infile.seekg (0, std::ios::beg);
     infile.read (reinterpret_cast<char*>(&time[0]), size);
     infile.close();
     
     return 0;
-}
-
-
-
-
-///
-//Reading all models from binary file 
-//
-int sps_data::read_model_bin_all(){
-	#define NO_METALL 6
-	#define PATH "../input/bin/"
-
-	char metall;
-	std::string path;
-	std::string imf;
-	std::string filename;
-	
-	imf="chab";
-	path=PATH;
-	models.resize(2*NO_METALL);
-
-	for(int i=0;i<2;i++){
-		for(int j=0;j<NO_METALL;j++){
-			metall='2'+j;
-			//reading binary model
-			std::stringstream filename_sstr;
-			filename_sstr<<path<<imf<<metall<<".bin";
-			filename_sstr>>filename;
-			read_model_bin(i*NO_METALL+j, filename);
-        }
-		//second path:
-		imf="salp";
-	}
-	return 0;
-}
-
-///
-//Reading one model from binary file 
-//
-int sps_data::read_model_bin(int i, std::string infilename){
-	std::ifstream infile(infilename.c_str(), std::ios::binary |std::ios::ate);
-	//	CHECKING FILENAME
-	if(!(infile)){
-		std::cout<<"ERROR CAN'T OPEN FILE: "<<infilename<<std::endl;
-		return 1;
-	}
-	std::ifstream::pos_type size;
-	size = infile.tellg();
-
-	models[i].resize(size/sizeof(double));
-	
-	infile.seekg (0, std::ios::beg);
-	infile.read (reinterpret_cast<char*>(&models[i][0]), size);
-	infile.close();
-	std::cout<<"'"<<infilename<<"'  model read"<<std::endl;
-
-	return 0;
-}
-
-
-///
-//reading spectrum to fit
-//
-int sps_data::usr_read_sample(){
-	bool tryagain;	
-	std::cout<<"\nGetting spectrum to fit"<<std::endl;
-	do{
-		tryagain=false;
-		try{
-			// get filename
-			/*
-			modif for testing!
-
-			std::cout<<"input filename: ";
-			std::string temp_line;
-			getline(std::cin,temp_line);
-			std::stringstream temp_sstr;
-			temp_sstr<<temp_line;
-			
-			temp_sstr>>infilename;
-			*/
-			std::string infilename="../output/fm";
-
-			std::ifstream infile(infilename.c_str());
-		
-			// check filename
-			if(!(infile))										{
-				std::cout<<"\nERROR CAN'T OPEN FILE: "<<infilename<<"\n"<<std::endl;
-				throw 1;
-			}
-			
-			// read spectrum
-			std::cout<<"reading file: "<<infilename<<std::endl;
-			std::string str;
-			double temp;
-			while(infile>>str){
-				std::stringstream s;
-				s<<str;
-				if(s>>temp){
-					sample_spec.push_back(temp);
-		       	}
-			}
-			infile.close();
-		
-			//check no of ages
-			if(sample_spec.size()==0){
-				std::cout<<"\nERROR: no spectrum read\n"<<std::endl;
-				throw 1;
-			}
-		}catch (int ex){
-			if (ex==1){tryagain=true;}
-		}
-	}while(tryagain);
-
-	std::cout<<"spectrum read\n";
-	return 0;
 }
