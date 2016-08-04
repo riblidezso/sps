@@ -8,82 +8,106 @@
 #include <map>
 #include <chrono>
 #include <string.h>
+#include "sps_data.h"
+#include "sps_write.h"
 
-//include the opencl header
+
 #ifdef __APPLE__
     #include "OpenCL/opencl.h"
 #else
     #include "CL/cl.h"
 #endif
 
-//include the read class header
-//this reads models and measurement
-//this module uses its outputs
-#include "sps_data.h"
-
 
 
 class spectrum_generator{
-public: //contructor
+public:
 
-	//contructor copies some data from model
-	spectrum_generator(sps_data& model);
+//constructor
+	spectrum_generator(sps_data& input_data,std::string kernel_filename,int input_platform,int input_device);
 
-public: //functions
-
+/*
+ FUNCTIONS
+ */
+    
+public:
+    
 //intial functions
-	//does basic opencl operations (choose platfrom devices etc)
+    
+    //copy and move data from the sps_data object
+    int copy_and_move_data(sps_data& model);
+	//do all opencl related initialization
 	int opencl_initialize(std::string kernel_filename,int platform,int device);
-	//reads the kernel files to a string
-	int convertToString(std::string infilename , std::string& s);
+    
+private:
+    //query and select opencl platform
+    int select_opencl_platform(int input_platform);
+    int query_opencl_platforms(cl_uint& n_platforms,cl_platform_id*& platforms);
+    int query_opencl_platform_info(int i, cl_platform_id platform);
+    //query and select opencl device
+    int select_opencl_device(int input_device);
+    int query_opencl_devices(cl_platform_id platform,cl_uint& n_devices,cl_device_id*& devices);
+    int query_opencl_device_info(int i, cl_device_id device);
+    
+    int opencl_create_context();
+    int opencl_create_command_queue();
+    int opencl_build_program(std::string kernel_filename);
+    int convert_file_to_string(std::string infilename , std::string& s);
+    int opencl_create_buffers();
+    int opencl_create_kernels();
+    int set_initial_kernel_args();
 
-	//creates kernels objects, and allocates buffers on the GPU (or other device)
-	int opencl_kern_mem();
 
-	//passes buffer arguments to kernels
-	int set_kern_arg();
-
-
-//fucntions called in every interation
-	//the module communicates with the MCMC module through
-	//this function: MCMC sets the modified parameters here
+//functions called during operation
+    
+public:
     int set_params( std::map<std::string,double>& parameters );
+private:
+    int change_kernel_params();
 
-	//passes changed arguments to kernels
-	int change_kernel_params();
-
-	//runs the kernel
-	//this is the core of the program
+public:
 	int generate_spectrum();
+    int compare_to_measurement();
+private:
+    double get_factor_to_scale_spectra_to_measurement();
+    double get_chi_square(double scale_factor);
     
-    //compare spectrum to the measurement
-    int calculate_logp();
-
-	//if the result is the best one yet, it reads it back
-	//from GPU to CPU memmory
-	int read_best_result();
-    
-    //return result
+public:
     std::vector<cl_float> get_result();
 
 //functions called at the end
-	//deletes buffers, and opencl objects
+    
+public:
 	int clean_resources();
+    int write_specs(std::vector< std::vector<cl_float> >& results,std::string out_fname);
 	
 	//writes the fitted, and the measured model
-	int write_fit_result();
+	//int write_fit_result();
     
-    int write_specs(std::vector< std::vector<cl_float> >& results,
-                    std::string out_fname);
-
-
-
-public: //data
-
-	//beggining and end of execution times
-    std::chrono::high_resolution_clock::time_point begin, end;
-
-//measured spectrum containers
+    
+    
+    
+/*
+ DATA
+ */
+    
+private:
+    
+//sps model data
+    
+    //ages where model data is available
+    std::vector<cl_float> time;
+    //wavelengths of the model
+    std::vector<cl_float> wavelengths;
+    //stores the resampled model
+    std::vector<cl_float> resampled_model;
+    //sizes of model data points
+    int nspecsteps;
+    int ntimesteps;
+    
+    
+//measured spectrum data
+    
 	//the intensity
 	std::vector<cl_float> mes_spec;
 	//error is pessimistic, uses the larger 
@@ -97,28 +121,9 @@ public: //data
 	//number of measured points
 	int mes_nspecsteps;
 
-//data for generating spectra
-	//ages where model data is available
-	std::vector<cl_float> time;
-	//wavelengths of the model
-	std::vector<cl_float> wavelengths;
-	
-	//will store the resampled model
-	//not resampled model is not copied here 
-	// from read module, only used
-	std::vector<cl_float> resampled_model;
 
-	//numbers of points
-	int nspecsteps;
-	int ntimesteps;
-
-	//indicator, which imf is used
-	//TODO choice should be in a config file!
-	//now it is hardcoded Chabrier
-	std::string imf;
-
-
-	//fitted parameters
+//model parameters
+    
 	//-age is the beggining time of the sytnhesis
 	//-sfr_tau: now SFR is an exponential decay
 	//sfr_tau is the time constant of the decay
@@ -130,53 +135,52 @@ public: //data
 	cl_float dust_tau_v,dust_mu,sfr_tau, age, metall, vdisp;
 
 
-//buffers to write
-	//factors calucalted on gpu to pull spectra together
-	std::vector<cl_float> factor1,factor2;
-	//chis calculated on gpu
-	//they are not actual chis but the sum of 
-	//error normalized squares
-	std::vector<cl_float> chis;
-	//aggregated value of chis
+    //aggregated value of weighted squared errors
 	cl_float chi;
-
-	//best fitting model
-	std::vector <cl_float> result;
-
-
-//opencl related objects, and data
-
-	//platfroms and devices are only used in the 
-	//initializing function so they are not global now
-
-	//context program commmandque (opencl magic)
-	cl_context context;
-	cl_program program;
-	cl_command_queue commandQueue;
 
 
 //kernels
-	
+    
 	//generates the spectra with no vdisp
 	cl_kernel kernel_spec_gen;
-
+    
 	//adds vdisp (this is a different kernel, because
 	//the convolution of the spectra is not fully paralel,
 	//you need some neighbour points to work with)
-	//also calculates the factors to pull measured and model
-	//spectra together
 	cl_kernel kernel_vel_disp;
+    
+    //calculates the factors to pull measured and model
+    //spectra together
+    cl_kernel kernel_get_factors;
 	
 	//calculates error normalized squares
 	cl_kernel kernel_chi_calc;
 	
 
 //buffers on the GPU (other device) (last "d" indicates device)
-	//buffers to read on GPU
+	
+    //buffers to read on GPU
 	cl_mem model_without_dust_d,time_d,wavel_d,resampled_model_d;
 	cl_mem mes_spec_d,mes_spec_err_d,mes_spec_mask_d;
-	//buffers to write on GPU
-	cl_mem model_d,result_no_vel_d,result_d,factor1_d,factor2_d,chi_d;	
+	
+    //buffers to read and write on GPU
+	cl_mem model_d,result_no_vel_d,result_d,factor1_d,factor2_d,chi_d;
+    
+    
+//opencl related objects
+    
+    cl_uint n_platforms;
+    cl_platform_id* platforms;
+    cl_platform_id platform;
+    
+    cl_uint n_devices;
+    cl_device_id* devices;
+    cl_device_id device;
+    
+    cl_context context;
+    cl_program program;
+    cl_command_queue commandQueue;
+
 
 };
 

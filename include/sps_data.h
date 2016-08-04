@@ -7,6 +7,9 @@
 #include "CL/cl.h"
 #endif
 
+//number of models with different metallicity 
+#define NO_METALL_MODELS 6
+
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -16,7 +19,7 @@ class sps_data{
 
 public:
 
-    sps_data(std::string measurement_fname);
+    sps_data(std::string measurement_fname,std::string imf);
     
 //functions
 private:
@@ -24,25 +27,24 @@ private:
     //read the binary sps model data
     int read_binary_sps_model(std::string imf);
     
+    //reads in all models
+    int read_model_bin_all_cont(std::string imf);
+    
+    //reads timesteps_cont
+    int read_model_bin_cont(std::string infilename);
+    
+    //reads timesteps
+    int read_time_bin();
+    
+    //reads wavelengths
+    int read_wavel_bin();
+    
+    
     //read sdss measurement data from file
     int read_measurement(std::string infilename );
     
     //models are resampled to the resolution os the measurement
-    int resample_models_2_mes(std::string imf);
-
-    
-	
-    //reads in all models
-	int read_model_bin_all_cont(std::string imf);
-    
-    //reads timesteps_cont
-    int read_model_bin_cont(std::string infilename);
-
-	//reads timesteps
-	int read_time_bin();
-
-	//reads wavelengths
-	int read_wavel_bin();
+    int resample_models_2_mes();
 
 	
 //data
@@ -58,9 +60,6 @@ public:
     
     //contigous models resampled to measurement wavelength
     std::vector<cl_float> resampled_model_cont;
-
-	//sample spectrum container
-	std::vector<double> sample_spec;
 
 	//sdss_spec containers
 	std::vector<double> mes_spec_wavel;

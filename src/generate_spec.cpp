@@ -6,6 +6,10 @@
 
 int main(int argc, char* argv[])
 {
+    //beggining and end of execution times
+    std::chrono::high_resolution_clock::time_point begin, end;
+    begin = std::chrono::high_resolution_clock::now();
+    
     int error=0;
     
     ///////////////////////////////////////////////////////////////
@@ -24,10 +28,7 @@ int main(int argc, char* argv[])
     /*
      Read options from config file
      */
-    
     sps_options my_sps_options;
-    
-    //read config file
     my_sps_options.read_config(argv[1]);
     
     
@@ -42,35 +43,17 @@ int main(int argc, char* argv[])
     ///////////////////////////////////////////////////////////////
     /*
      Read data
-     - read the models and int the input measurement data
-     - resample models to measurement wavelengths
+     - reads the models and the input measurement data
+     - resamples models to measurement wavelengths
      */
-    
-    sps_data my_sps_data;
-    
-    //read sps model
-    my_sps_data.read_binary_sps_model();
-    //read measurement data
-    my_sps_data.read_measurement(my_sps_options.sdss_measurement_fname);
-    
-    //resample models to measurement wavelengths
-    my_sps_data.resample_models_2_mes("chabrier");
+    sps_data my_sps_data(my_sps_options.sdss_measurement_fname,my_sps_options.imf);
     
     
     ///////////////////////////////////////////////////////////////
     /*
      Spectrum generator class
      */
-    
-    spectrum_generator my_spec_gen(my_sps_data);
-    
-    //basic stuff
-    my_spec_gen.opencl_initialize("fit_w_err.cl",my_sps_options.device,my_sps_options.platform);
-    //kernel and memory
-    my_spec_gen.opencl_kern_mem();
-    //setting the device memories of kernels
-    my_spec_gen.set_kern_arg();
-    
+    spectrum_generator my_spec_gen(my_sps_data,"fit_w_err.cl",my_sps_options.platform,my_sps_options.device);
     
     ///////////////////////////////////////////////////////////////
     /*
@@ -111,6 +94,12 @@ int main(int argc, char* argv[])
      Free resources
      */
     my_spec_gen.clean_resources();
+    
+    
+    //stop clock
+    end = std::chrono::high_resolution_clock::now();
+    std::chrono::microseconds ms = std::chrono::duration_cast<std::chrono::microseconds >(end - begin);
+    std::cout<<"\nIt took: "<<ms.count()/double(1e6)<<" s"<< std::endl;
     
     return	error;
 }

@@ -6,9 +6,7 @@
     - read the measurement
     - resample models to measuremement wavelengths
  */
-sps_data::sps_data(std::string measurement_fname){
-    std::string imf="chabrier";
-    
+sps_data::sps_data(std::string measurement_fname,std::string imf){
     //read model
     this->read_binary_sps_model(imf);
     
@@ -16,9 +14,10 @@ sps_data::sps_data(std::string measurement_fname){
     this->read_measurement(measurement_fname);
     
     //resample models to measurement file
-    this->resample_models_2_mes(imf);
+    this->resample_models_2_mes();
     
 }
+
 
 //////////////////////////////////////////
 
@@ -41,139 +40,9 @@ int sps_data::read_binary_sps_model(std::string imf){
 
 
 /*
- read measurement from sdss csv file
- */
-int sps_data::read_measurement(std::string infilename ){
-    std::cout<<"reading measurement ... "<<std::endl;
-    
-    //open file
-    std::ifstream infile(infilename.c_str());
-    if(!infile.is_open()){
-        std::cout<<"\nERROR CAN'T OPEN FILE: "<<infilename<<"\n"<<std::endl;
-        exit(1);
-    }
-    
-    //loop over lines
-    std::string line;
-    while(getline(infile,line)){
-        //change seperator to space from comma
-        for(size_t j=0;j<line.size();j++){
-            if (line[j]==','){
-                line[j]=' ';
-            }
-        }
-        //parse numbers in the line
-        std::stringstream temp_sstr;
-        temp_sstr<<line;
-        if (line[0] != '#' ){ //skip header
-            double temp=0;
-            temp_sstr>>temp;
-            this->mes_spec_wavel.push_back(temp);
-            temp_sstr>>temp;
-            this->mes_spec.push_back(temp);
-            temp_sstr>>temp;
-            this->mes_spec_err_l.push_back(temp);
-            temp_sstr>>temp;
-            this->mes_spec_err_h.push_back(temp);
-            temp_sstr>>temp;
-            this->mes_spec_mask.push_back(temp);
-        }
-    }
-    infile.close();
-    return 0;
-}
-
-
-/*
-    Resample all the models to the wavelengths of the measurement
- */
-int sps_data::resample_models_2_mes(std::string imf)
-{
-    //calculate model offset from imf
-    int offset=0;
-    if( imf == "chabrier")
-        offset=0;
-    else if(imf=="salpeter")
-        offset=6;
-    
-    int nspecsteps = (int) this->wavelengths.size();
-    int ntimesteps = (int) this->time.size();
-    int mes_nspecsteps = (int) this->mes_spec_wavel.size();
-    
-    //resize the vector that will store the resampled model
-    //this is a huge contigous vector because this makes it
-    //easy to pass it to GPU (only have to give pointer and size)
-    resampled_model_cont.resize(ntimesteps * mes_nspecsteps * 6);
-    
-    //wd, wu are weigths for interpolation, delta is wavelength distance
-    double wd,wu,delta;
-    
-    //these will store temporary positions
-    int low,high,place,place1;
-    high=0;
-    
-    
-    //the resampling
-    //loop over measurement points
-    for(int i=0;i<mes_nspecsteps;i++){
-        //find nearest model wavelength points
-        
-        //find the first model wavelength that is bigger
-        //than measurement wavelength
-        while(mes_spec_wavel[i] > this->wavelengths[high]){
-            high++;
-            //there might be problems if the one measured data wavelength is
-            //larger than last model data, but this seems unlikely
-            if (high==nspecsteps){
-                std::cerr<<"\nERROR measurement wavelength"<<mes_spec_wavel[i]<<"\n";
-                std::cerr<<"can't be interpolated from model wavelength points\n\n";
-                exit(1);
-            }
-        }
-        
-        //there might be problems if the first measured wavelength is
-        //smaller than first model data, but this seems also unlikely
-        if (high==0){
-            std::cerr<<"\nERROR measurement wavelength"<<mes_spec_wavel[i]<<"\n";
-            std::cerr<<"can't be interpolated from model wavelength points\n\n";
-            exit(1);
-        }
-        
-        //the one before the first bigger is definitely smaller
-        low=high-1;
-        
-        //calculate distance and weights
-        delta=this->wavelengths[high] - this->wavelengths[low];
-        wd= (this->wavelengths[high]-mes_spec_wavel[i])/delta;
-        wu= (mes_spec_wavel[i]- this->wavelengths[low])/delta;
-        
-        //the intepolation
-        //loop over different metallicity models
-        for(int k=offset;k<offset+6;k++){
-            //loop over timesteps
-            for(int j=0;j<ntimesteps;j++){
-                //calculate positions in the big continous models vector
-                place=mes_nspecsteps*ntimesteps*k + mes_nspecsteps*j;
-                place1=nspecsteps*ntimesteps*k + nspecsteps*j;
-                //interpolation
-                resampled_model_cont[place+i]=wd*this->model_cont[low+place1]+wu*this->model_cont[high+place1];
-            }
-        }
-    }
-    return 0;
-}
-
-
-///////////////////////////////////////////////////////////////
-
-
-
-/*
 Reading models with every metallicity from binary files into one contiguous vector
 */
 int sps_data::read_model_bin_all_cont(std::string imf){
-	#define NO_METALL_MODELS 6
-
     std::cout<<"reading models ";
 
     //loop over metallicities
@@ -282,5 +151,114 @@ int sps_data::read_time_bin(){
     infile.read (reinterpret_cast<char*>(&time[0]), size);
     infile.close();
     
+    return 0;
+}
+
+
+//////////////////////////
+
+
+
+/*
+ read measurement from sdss csv file
+ */
+int sps_data::read_measurement(std::string infilename ){
+    std::cout<<"reading measurement ... "<<std::endl;
+    
+    //open file
+    std::ifstream infile(infilename.c_str());
+    if(!infile.is_open()){
+        std::cout<<"\nERROR CAN'T OPEN FILE: "<<infilename<<"\n"<<std::endl;
+        exit(1);
+    }
+    
+    //loop over lines
+    std::string line;
+    while(getline(infile,line)){
+        //change seperator to space from comma
+        for(size_t j=0;j<line.size();j++){
+            if (line[j]==','){
+                line[j]=' ';
+            }
+        }
+        //parse numbers in the line
+        std::stringstream temp_sstr;
+        temp_sstr<<line;
+        if (line[0] != '#' ){ //skip header
+            double temp=0;
+            temp_sstr>>temp;
+            this->mes_spec_wavel.push_back(temp);
+            temp_sstr>>temp;
+            this->mes_spec.push_back(temp);
+            temp_sstr>>temp;
+            this->mes_spec_err_l.push_back(temp);
+            temp_sstr>>temp;
+            this->mes_spec_err_h.push_back(temp);
+            temp_sstr>>temp;
+            this->mes_spec_mask.push_back(temp);
+        }
+    }
+    infile.close();
+    return 0;
+}
+
+
+
+
+//////////////////////////
+
+
+/*
+ Resample all the models to the wavelengths of the measurement
+ */
+int sps_data::resample_models_2_mes(){
+    //make length variables for conveniance
+    int nspecsteps = (int) this->wavelengths.size();
+    int ntimesteps = (int) this->time.size();
+    int mes_nspecsteps = (int) this->mes_spec_wavel.size();
+    
+    //check boundaries
+    if ( this->mes_spec_wavel[0] <=  this->wavelengths[0] ||
+        this->mes_spec_wavel[mes_nspecsteps-1] >=  this->wavelengths[nspecsteps-1]){
+        //report error and quit
+        std::cerr<<"\nERROR: measurement wavelengths span outside the model range"<<std::endl;
+        std::cerr<<"mes: "<<this->mes_spec_wavel[0]<<" - "<<this->mes_spec_wavel[mes_nspecsteps]<<std::endl;
+        std::cerr<<"models: "<<this->wavelengths[0]<<" - "<<this->wavelengths[nspecsteps]<<std::endl;
+        exit(1);
+    }
+    
+    //resize the vector that will store the resampled model
+    resampled_model_cont.resize(ntimesteps * mes_nspecsteps * NO_METALL_MODELS);
+    
+    double wlower,whigher,delta; //weights for interpolation
+    int low,high,place,place1; //pointers in data
+    high=0;
+    
+    //loop over measurement points
+    for(int i=0;i<mes_nspecsteps;i++){
+        //find the first model wavelength that is bigger than measurement wavelength
+        while(this->wavelengths[high] < this->mes_spec_wavel[i] ){
+            high++;
+        }
+        //the one before the first bigger is definitely smaller
+        low=high-1;
+        
+        //calculate weights for interpolation
+        delta=this->wavelengths[high] - this->wavelengths[low];
+        wlower= (this->wavelengths[high]-this->mes_spec_wavel[i])/delta;
+        whigher= (this->mes_spec_wavel[i]- this->wavelengths[low])/delta;
+        
+        //loop over different metallicity models
+        for(int k=0;k<NO_METALL_MODELS;k++){
+            //loop over timesteps
+            for(int j=0;j<ntimesteps;j++){
+                //calculate positions in the big continous models vectors
+                place=mes_nspecsteps*ntimesteps*k + mes_nspecsteps*j;
+                place1=nspecsteps*ntimesteps*k + nspecsteps*j;
+                //interpolate
+                resampled_model_cont[place+i]=wlower*this->model_cont[low+place1]+whigher*this->model_cont[high+place1];
+            }
+        }
+    }
     return 0;
 }

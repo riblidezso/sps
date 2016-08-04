@@ -7,6 +7,7 @@
 sps_options::sps_options(){
     this->device= 0;
     this->platform= 0;
+    this->imf="chabrier";
     
     std::string path=getenv("SPSFAST_PATH");
     std::stringstream sstr;
@@ -52,6 +53,11 @@ int sps_options::read_config(std::string input_filename)
     it= params.find("device");
     if(it != params.end()){
         this->device=(int) strtol( params["device"].c_str(),NULL,10);
+    }
+    it= params.find("imf");
+    if(it != params.end()){
+        this->imf= params["imf"];
+        
     }
     it= params.find("measurement");
     if(it != params.end()){
