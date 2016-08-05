@@ -3,7 +3,7 @@
 spectrum_generator::spectrum_generator(sps_data& input_data,std::string kernel_filename,int input_platform,int input_device){
     
     //copy and move data from model
-    copy_and_move_data(input_data);
+    copy_data(input_data);
     
     //initialize everything with opencl
     opencl_initialize(kernel_filename,input_platform,input_device);
@@ -18,21 +18,19 @@ spectrum_generator::spectrum_generator(sps_data& input_data,std::string kernel_f
 /*
  copies and moves data from sps data
  */
-int spectrum_generator::copy_and_move_data(sps_data& input_data){
+int spectrum_generator::copy_data(sps_data& input_data){
     //copy data sizes
-    this->nspecsteps=(int) input_data.wavelengths.size();
     this->ntimesteps=(int) input_data.time.size();
     this->mes_nspecsteps=(int) input_data.mes_spec_wavel.size();
     
-    //copy (and there is type conversion too) small data, that wont be modified
+    //copy (and there is type conversion too) data
     this->time=std::vector<cl_float>(input_data.time.begin(),input_data.time.end());
+    this->resampled_model=std::vector<cl_float>(input_data.resampled_model_cont.begin(),input_data.resampled_model_cont.end());
+    
     this->mes_spec=std::vector<cl_float>(input_data.mes_spec.begin(),input_data.mes_spec.end());
     this->mes_spec_wavel=std::vector<cl_float>(input_data.mes_spec_wavel.begin(),input_data.mes_spec_wavel.end());
     this->mes_spec_mask=std::vector<cl_float>(input_data.mes_spec_mask.begin(),input_data.mes_spec_mask.end());
     this->mes_spec_err=std::vector<cl_float>(input_data.mes_spec_err_h.begin(),input_data.mes_spec_err_h.end());
-    
-    //move model data
-    this->resampled_model=std::move(input_data.resampled_model_cont);
     
     return 0;
 }

@@ -35,7 +35,7 @@ public:
 //intial functions
     
     //copy and move data from the sps_data object
-    int copy_and_move_data(sps_data& model);
+    int copy_data(sps_data& model);
 	//do all opencl related initialization
 	int opencl_initialize(std::string kernel_filename,int platform,int device);
     
@@ -97,12 +97,9 @@ private:
     
     //ages where model data is available
     std::vector<cl_float> time;
-    //wavelengths of the model
-    std::vector<cl_float> wavelengths;
     //stores the resampled model
     std::vector<cl_float> resampled_model;
     //sizes of model data points
-    int nspecsteps;
     int ntimesteps;
     
     
