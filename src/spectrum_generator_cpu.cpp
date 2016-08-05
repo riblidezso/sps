@@ -109,7 +109,7 @@ int spectrum_generator_cpu::generate_spectrum(){
 int spectrum_generator_cpu::metall_interpol(int wave){
     //get the first higher metallicty
     double model_metal[6]={0.0001,0.0004,0.004,0.008,0.02,0.05};
-    int modelno;
+    int modelno=0;
     for(int j=0;j<6;j++){
         if(model_metal[j] > this->metall){
             modelno=j-1;
@@ -214,7 +214,7 @@ int spectrum_generator_cpu::compare_to_measurement(){
     }
     
     //get factor to pull the generated spec to the measurement
-    this->chi=get_chi_square(scale_factor);
+    this->chi=get_chi_square();
 
 	return 0;
 }
@@ -263,7 +263,7 @@ double spectrum_generator_cpu::get_factor_to_scale_spectra_to_measurement(){
 /*
  calculate the sum of weighted squared errors
  */
-double spectrum_generator_cpu::get_chi_square(double scale_factor){
+double spectrum_generator_cpu::get_chi_square(){
     //weighted squared errors
     std::vector<double> chis(this->mes_nspecsteps);
     

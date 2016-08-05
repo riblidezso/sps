@@ -5,6 +5,12 @@
  set measurement file to a default one
  */
 sps_options::sps_options(){
+    //check enviroment variable
+    if (getenv("SPSFAST_PATH") == NULL){
+        std::cerr<<"ERROR!: SPSFAST_PATH enviroment variable not found."<<std::endl;
+        exit(1);
+    }
+    
     this->device= 0;
     this->platform= 0;
     this->imf="chabrier";

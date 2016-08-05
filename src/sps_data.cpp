@@ -7,6 +7,12 @@
     - resample models to measuremement wavelengths
  */
 sps_data::sps_data(std::string measurement_fname,std::string imf){
+    //check enviroment variable
+    if (getenv("SPSFAST_PATH") == NULL){
+        std::cerr<<"ERROR!: SPSFAST_PATH enviroment variable not found."<<std::endl;
+        exit(1);
+    }
+    
     //read model
     this->read_binary_sps_model(imf);
     
