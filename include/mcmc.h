@@ -11,10 +11,15 @@
 
 #include "sps_write.h" 
 
+#define BEST_STEP 0
+#define BETTER_STEP 1
+#define WORSE_ACCEPTED_STEP 2
+#define REJECTED_STEP 3
+
 class mcmc{
 public:
 
-	mcmc();
+    mcmc(std::string config_filename,std::string output_prefix);
 
 public:
 //functions
@@ -26,6 +31,9 @@ public:
 	int control_step_size(double opt_acc);
 
 	int change_params();
+    int get_mext_param_to_change();
+    int generate_step();
+    int check_boundaries(double step);
 
 	int evaluate_step(double input_logp);
 
@@ -36,7 +44,7 @@ public:
 
 //data
     int iter,maxiter;
-    std::string output_dir;
+    std::string output_prefix;
 
 	//chi values
 	double chi,chi_before, best_chi;
@@ -76,7 +84,6 @@ public:
 	std::map<std::string,double> best_parameters;
 
 	//maps for controlling step sizes	
-	std::map<std::string,double> steps;
 	std::map<std::string,double> sigmas;
 	std::map<std::string,std::vector<double> > sigmas_evol;
 	std::map<std::string,std::vector<double> > acc_s;

@@ -7,11 +7,12 @@
     - resample models to measuremement wavelengths
  */
 sps_data::sps_data(std::string measurement_fname,std::string imf){
-    //check enviroment variable
+    //check spsfast path enviroment variable
     if (getenv("SPSFAST_PATH") == NULL){
         std::cerr<<"ERROR!: SPSFAST_PATH enviroment variable not found."<<std::endl;
         exit(1);
     }
+    this->spsfast_path=std::string(getenv("SPSFAST_PATH"));
     
     //read model
     this->read_binary_sps_model(imf);
@@ -49,22 +50,20 @@ int sps_data::read_binary_sps_model(std::string imf){
 Reading models with every metallicity from binary files into one contiguous vector
 */
 int sps_data::read_model_bin_all_cont(std::string imf){
-    std::cout<<"reading models ";
+    std::cout<<"\nReading models ";
 
     //loop over metallicities
     for(int metall=2;metall<NO_METALL_MODELS+2;metall++){
         //create filename
-        std::string path=getenv("SPSFAST_PATH");
         std::stringstream filename_sstr;
         std::string filename;
-        filename_sstr<<path<<"/input/bin/"<<imf<<metall<<".bin";
+        filename_sstr<<this->spsfast_path<<"/input/bin/"<<imf<<metall<<".bin";
         filename_sstr>>filename;
         //read file
         read_model_bin_cont(filename);
         //report
         std::cout<<"..."<<std::flush;
 	}
-	std::cout<<std::endl;
 	return 0;
 }
 
@@ -98,14 +97,10 @@ int sps_data::read_model_bin_cont( std::string infilename){
 //Read wavelengths from binary file
 */
 int sps_data::read_wavel_bin(){
-    std::cout<<"reading wavelengths ... "<<std::endl;
+    std::cout<<"\nReading wavelengths ... ";
     
     //create filename
-    std::string path=getenv("SPSFAST_PATH");
-    std::string filename;
-    std::stringstream filename_sstr;
-    filename_sstr<<path<<"/input/bin/wavel.bin";
-    filename_sstr>>filename;
+    std::string filename = this->spsfast_path+"/input/bin/wavel.bin";
     
     //open
     std::ifstream infile(filename.c_str(), std::ios::binary |std::ios::ate);
@@ -131,14 +126,10 @@ int sps_data::read_wavel_bin(){
  Read timesteps from binary file
 */
 int sps_data::read_time_bin(){
-    std::cout<<"reading timesteps ... "<<std::endl;
+    std::cout<<"\nReading timesteps ... ";
     
     //create filename
-    std::string path=getenv("SPSFAST_PATH");
-    std::string filename;
-    std::stringstream filename_sstr;
-    filename_sstr<<path<<"/input/bin/time.bin";
-    filename_sstr>>filename;
+    std::string filename = this->spsfast_path+"/input/bin/time.bin";
     
     //open file
     std::ifstream infile(filename.c_str(), std::ios::binary |std::ios::ate);
@@ -169,7 +160,7 @@ int sps_data::read_time_bin(){
  read measurement from sdss csv file
  */
 int sps_data::read_measurement(std::string infilename ){
-    std::cout<<"reading measurement ... "<<std::endl;
+    std::cout<<"\nReading measurement ... "<<std::endl;
     
     //open file
     std::ifstream infile(infilename.c_str());

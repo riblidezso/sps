@@ -4,7 +4,7 @@
 #include "sps_options.h"
 #include "mcmc.h"
 #include "sps_data.h"
-#include "spectrum_generator.h"
+#include "spectrum_generator_cpu.h"
 
 
 int main(int argc, char* argv[]){
@@ -36,9 +36,7 @@ int main(int argc, char* argv[]){
     ///////////////////////////////////////////////////////////////
     /*
         MCMC fitter class
-        -read mcmc fitting parameters from config file
     */
-    
 	mcmc mcmc_fitter(argv[1],argv[2]);
 	
 
@@ -55,7 +53,7 @@ int main(int argc, char* argv[]){
     /*
      Spectrum generator class
      */
-    spectrum_generator my_spec_gen(my_sps_data,"spsfast_kernels.cl",my_sps_options.platform,my_sps_options.device);
+    spectrum_generator_cpu my_spec_gen(my_sps_data);
 
 
     ///////////////////////////////////////////////////////////////
@@ -96,7 +94,7 @@ int main(int argc, char* argv[]){
     //compare it to measurement (necessary for scaling)
     my_spec_gen.compare_to_measurement();
     //read back model to host
-    std::vector<std::vector<cl_float> > results;
+    std::vector<std::vector<double> > results;
     results.push_back(my_spec_gen.get_result());
     
     
@@ -107,13 +105,6 @@ int main(int argc, char* argv[]){
     std::cout<<"\nWriting results ...\n";
 	mcmc_fitter.write_results();
     my_spec_gen.write_specs(results, std::string(argv[2]) + "_best_fit.tsv");
-    
-    
-    ///////////////////////////////////////////////////////////////
-    /*
-        Free resources
-     */
-	my_spec_gen.clean_resources();
     
     
     ///////////////////////////////////////////////////////////////

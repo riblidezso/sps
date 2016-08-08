@@ -6,11 +6,11 @@
 #include "spectrum_generator_cpu.h"
 
 int main(int argc, char* argv[]){
-    //beggining and end of execution times
+    int error=0;
+    
+    //Record execution time
     std::chrono::high_resolution_clock::time_point begin, end;
     begin = std::chrono::high_resolution_clock::now();
-    
-    int error=0;
     
     ///////////////////////////////////////////////////////////////
     /*
@@ -106,7 +106,7 @@ int main(int argc, char* argv[]){
         i++;
         if( (i % 1000) == 0 )
             std::cout<<i<<" spectra generated "<<std::endl;
-        if( (i % 50) == 0 ){
+        if( (i % 50) == 1 ){
             std::cout<<".";
             std::cout.flush();
         }
@@ -122,10 +122,12 @@ int main(int argc, char* argv[]){
     my_spec_gen.clean_resources();
     
     
-    //stop clock
+    ///////////////////////////////////////////////////////////////
+    /*
+     Report exectution time
+     */
     end = std::chrono::high_resolution_clock::now();
     std::chrono::microseconds ms = std::chrono::duration_cast<std::chrono::microseconds >(end - begin);
-    std::cout<<"\nIt took: "<<ms.count()/double(1e6)<<" s"<< std::endl;
-    
+    std::cout<<"\nDone \nIt took: "<<ms.count()/double(1e6)<<" s"<< std::endl;
     return	error;
 }

@@ -143,7 +143,6 @@ int spectrum_generator::query_opencl_platform_info(int i, cl_platform_id platfor
     //print info
     std::cout<<i<<". platform:\t"<<platform_name<<"\n";
     std::cout<<"    version:\t"<<platform_version<<"\n";
-    std::cout<<std::endl;
     
     delete[] platform_name;
     delete[] platform_version;
@@ -316,12 +315,9 @@ int spectrum_generator::opencl_build_program(std::string kernel_filename){
     cl_int	status=0;
     
     //load kernel file to array
-    //get kernel file full path
-    std::string path=getenv("SPSFAST_PATH");
-    std::stringstream ss;
-    std::string kernel_full_path;
-    ss<<path<<"/bin/"<<kernel_filename;
-    ss>>kernel_full_path;
+    //get kernel file full path (env var checked in reader should not fail)
+    std::string kernel_full_path = std::string(getenv("SPSFAST_PATH")) + "/src/" + kernel_filename;
+
     //read it
     std::string sourceStr;
     status = convert_file_to_string(kernel_full_path, sourceStr);

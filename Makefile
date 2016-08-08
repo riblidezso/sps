@@ -32,7 +32,7 @@ IDIR = include
 
 
 # all target
-all: $(BIN)/generate_spec $(BIN)/generate_spec_cpu $(BIN)/test_spectrum_generators
+all: $(BIN)/generate_spec $(BIN)/generate_spec_cpu $(BIN)/test_spectrum_generators $(BIN)/fit_spectrum $(BIN)/fit_spectrum_cpu
 
 
 
@@ -79,18 +79,23 @@ $(ODIR)/test_spectrum_generators.o : $(SRC)/test_spectrum_generators.cpp
 
 
 #Building fitter
-#$(BIN)/fit_spectrum : $(ODIR)/fit_spectrum.o $(ODIR)/spectrum_generator.o $(ODIR)/mcmc.o $(ODIR)/sps_data.o  $(ODIR)/sps_write.o $(ODIR)/sps_options.o
-#	$(LINK) -o $@ $^ $(LIBOPENCL)
+$(BIN)/fit_spectrum : $(ODIR)/fit_spectrum.o $(ODIR)/spectrum_generator.o $(ODIR)/mcmc.o $(ODIR)/sps_data.o  $(ODIR)/sps_write.o $(ODIR)/sps_options.o
+	$(LINK) -o $@ $^ $(LIBOPENCL)
 
-#$(ODIR)/fit_spectrum.o : $(SRC)/fit_spectrum.cpp
-#	$(CXX) -c -o  $@ $< $(CXXFLAGS)
-
-
-#$(ODIR)/mcmc.o : $(SRC)/mcmc.cpp $(IDIR)/mcmc.h
-#	$(CXX) -c -o  $@ $< $(CXXFLAGS)
+$(ODIR)/fit_spectrum.o : $(SRC)/fit_spectrum.cpp
+	$(CXX) -c -o  $@ $< $(CXXFLAGS)
 
 
+$(ODIR)/mcmc.o : $(SRC)/mcmc.cpp $(IDIR)/mcmc.h
+	$(CXX) -c -o  $@ $< $(CXXFLAGS)
 
+
+#Buildingi cpu only fitter
+$(BIN)/fit_spectrum_cpu: $(ODIR)/fit_spectrum_cpu.o $(ODIR)/spectrum_generator_cpu.o $(ODIR)/mcmc.o $(ODIR)/sps_data.o  $(ODIR)/sps_write.o $(ODIR)/sps_options.o
+	$(LINK) -o $@ $^ 
+
+$(ODIR)/fit_spectrum_cpu.o : $(SRC)/fit_spectrum_cpu.cpp
+	$(CXX) -c -o  $@ $< $(CXXFLAGS)
 
 
 

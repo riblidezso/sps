@@ -49,6 +49,7 @@ private:
 	
 //data
 public:
+    std::string spsfast_path;
 
 	//stores the ages where model data is available
 	std::vector<double> time;
