@@ -33,17 +33,19 @@ int write_map(std::map<std::string,std::vector<double> >& map_to_write, std::str
     }
     
     //write header
-    outfile<<"#";
+    int len=0;
     for(auto element : map_to_write){
         outfile<<element.first<<"\t";
+        len=(int) element.second.size();
     }
+    outfile<<std::endl;
     
     //write numbers
-    for(auto element : map_to_write){
-        outfile<<"\n";
-        for (double data : element.second){
-            outfile<<data<<"\t";
+    for(int i=0 ; i<len;i++ ){
+        for(auto element : map_to_write){
+            outfile<<element.second[i]<<"\t";
         }
+        outfile<<"\n";
     }
     
     outfile.close();

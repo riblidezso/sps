@@ -145,7 +145,6 @@ __kernel void get_factors (    __global float* mes_spec,
                                __global float* factor1,
                                __global float* factor2
                                )
-
 {
     const int wave = get_global_id(0);
     
@@ -169,19 +168,18 @@ __kernel void chi_calculation (
 
 					__global float* result,
 					__global float* chi,
-					__const float factor,
-
-					__global float* wavelengths
+					__const float factor
 					)			
 {
 	const int wave = get_global_id(0);
     
     //modifying data due to factor
-	result[wave]= (result[wave] * factor);
+	result[wave]= result[wave] * factor;
 	
     //counting chi
+    //2?
 	if (  mes_spec_mask[wave] == 0 && mes_spec_err[wave]!=0 )
-		chi[wave]= ( mes_spec[wave] - result[wave] )*( mes_spec[wave] - result[wave] )/(2* mes_spec_err[wave]*mes_spec_err[wave]);
+		chi[wave]= ( mes_spec[wave] - result[wave] )*( mes_spec[wave] - result[wave] )/(2 * mes_spec_err[wave] * mes_spec_err[wave]);
 	else 
 		chi[wave]=0;
 

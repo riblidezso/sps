@@ -568,7 +568,6 @@ int spectrum_generator::set_initial_kernel_args()
 	status |= clSetKernelArg(kern, 2, sizeof(cl_mem), &this->mes_spec_mask_d);
 	status |= clSetKernelArg(kern, 3, sizeof(cl_mem), &this->result_d);
 	status |= clSetKernelArg(kern, 4, sizeof(cl_mem), &this->chi_d);
-	status |= clSetKernelArg(kern, 6, sizeof(cl_mem), &this->wavel_d);
 	//error check
 	if (status!=0){
 		std::cerr<<"ERROR setting kernel chi calc arguments: "<<status<<std::endl;
@@ -694,20 +693,20 @@ int spectrum_generator::generate_spectrum(){
 /*
  compare generated spectrum to measurement
  */
-int spectrum_generator::compare_to_measurement(){
+double spectrum_generator::compare_to_measurement(){
     //get factor to pull the generated spec to the measurement
     double scale_factor=get_factor_to_scale_spectra_to_measurement();
     
     //get factor to pull the generated spec to the measurement
     this->chi=get_chi_square(scale_factor);
 
-	return 0;
+	return this->chi;
 }
 
 /*
  calculate the scaliung factor to pull spectra to measurement
  */
-double spectrum_generator::get_factor_to_scale_spectra_to_measurement(){
+cl_float spectrum_generator::get_factor_to_scale_spectra_to_measurement(){
     //error variable
     cl_int status=0;
     
@@ -719,6 +718,15 @@ double spectrum_generator::get_factor_to_scale_spectra_to_measurement(){
     //they are use to calculate the "factor" that pulls together observed
     //and model spectra
     cl_float temp_1,temp_2,scale_factor;
+    
+    
+    //next kernel for velocity dispersioncalculate factors
+    size_t global_work_size[1] = {(size_t) mes_nspecsteps};
+    status = clEnqueueNDRangeKernel(commandQueue, kernel_get_factors, 1, NULL, global_work_size, NULL, 0, NULL,NULL);
+    if (status!=0){
+        std::cerr<<"ERROR running kernel_get_factors: "<<status<<std::endl;
+        exit(1);
+    }
     
     //Read the factors back to host memory
     status = clEnqueueReadBuffer(this->commandQueue, this->factor1_d, CL_TRUE, 0, this->mes_nspecsteps * sizeof(cl_float) , factor1.data(), 0, NULL,NULL);
@@ -743,12 +751,13 @@ double spectrum_generator::get_factor_to_scale_spectra_to_measurement(){
     scale_factor=temp_1/temp_2;
     
     return scale_factor;
+    
 }
 
 /*
  calculate the sum of weighted squared errors
  */
-double spectrum_generator::get_chi_square(double scale_factor){
+double spectrum_generator::get_chi_square(cl_float scale_factor){
     //error variable
     cl_int status=0;
     
@@ -771,7 +780,7 @@ double spectrum_generator::get_chi_square(double scale_factor){
     }
     
     //Read the errors to host memory.
-    status = clEnqueueReadBuffer(commandQueue, chi_d, CL_TRUE, 0, mes_nspecsteps * sizeof(cl_float) , chis.data(), 0,NULL,NULL);
+    status = clEnqueueReadBuffer(this->commandQueue, this->chi_d, CL_TRUE, 0, this->mes_nspecsteps * sizeof(cl_float) , chis.data(), 0,NULL,NULL);
     if (status!=0){
         std::cerr<<"ERROR reading chi buffer: "<<status<<std::endl;
         exit(1);
@@ -779,7 +788,7 @@ double spectrum_generator::get_chi_square(double scale_factor){
     
     //summing chi squares in host
     double chi=0;
-    for(int i=0;i<mes_nspecsteps;i++){
+    for(int i=0;i<this->mes_nspecsteps;i++){
         chi+=chis[i];
     }
     
@@ -828,22 +837,6 @@ int spectrum_generator::write_specs(std::vector< std::vector<cl_float> >& result
     return 0;
 }
 
-/*
-int spectrum_generator::write_fit_result()
-{
-	//type conversion for the simple write_table function i wrote
-	std::vector<std::vector <double> > output;
-	output.push_back(std::vector<double>(mes_spec_wavel.begin(),mes_spec_wavel.end()));
-	output.push_back(std::vector<double>(mes_spec.begin(),mes_spec.end()));
-	output.push_back(std::vector<double>(mes_spec_err.begin(),mes_spec_err.end()));
-	output.push_back(std::vector<double>(mes_spec_mask.begin(),mes_spec_mask.end()));
-	output.push_back(std::vector<double>(result.begin(),result.end()));
-
-	//table writing function from sps_write 
-	write_table_col(output,"../output/fit.dat");
-	return 0;
-}
-*/
 
 /////////////////////////////////////////////////////////////////////////////
 // clean up

@@ -4,8 +4,7 @@
 #include "sps_data.h"
 #include "spectrum_generator_cpu.h"
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]){
     //beggining and end of execution times
     std::chrono::high_resolution_clock::time_point begin, end;
     begin = std::chrono::high_resolution_clock::now();

@@ -204,7 +204,7 @@ int spectrum_generator_cpu::convol_vel_disp(int wave){
 /*
  compare generated spectrum to measurement
  */
-int spectrum_generator_cpu::compare_to_measurement(){
+double spectrum_generator_cpu::compare_to_measurement(){
     //get factor to pull the generated spec to the measurement
     double scale_factor=get_factor_to_scale_spectra_to_measurement();
     
@@ -216,7 +216,7 @@ int spectrum_generator_cpu::compare_to_measurement(){
     //get factor to pull the generated spec to the measurement
     this->chi=get_chi_square();
 
-	return 0;
+	return this->chi;
 }
 
 /*

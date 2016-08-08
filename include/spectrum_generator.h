@@ -67,10 +67,10 @@ private:
 
 public:
 	int generate_spectrum();
-    int compare_to_measurement();
+    double compare_to_measurement();
 private:
-    double get_factor_to_scale_spectra_to_measurement();
-    double get_chi_square(double scale_factor);
+    cl_float get_factor_to_scale_spectra_to_measurement();
+    double get_chi_square(cl_float scale_factor);
     
 public:
     std::vector<cl_float> get_result();
@@ -157,7 +157,7 @@ private:
 //buffers on the GPU (other device) (last "d" indicates device)
 	
     //buffers to read on GPU
-	cl_mem model_without_dust_d,time_d,wavel_d,resampled_model_d;
+	cl_mem time_d,wavel_d,resampled_model_d;
 	cl_mem mes_spec_d,mes_spec_err_d,mes_spec_mask_d;
 	
     //buffers to read and write on GPU

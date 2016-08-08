@@ -43,10 +43,10 @@ private:
     int convol_vel_disp(int wave);
     
 public:
-    int compare_to_measurement();
+    double compare_to_measurement();
 private:
     double get_factor_to_scale_spectra_to_measurement();
-    double get_chi_square(double scale_factor);
+    double get_chi_square();
     
 public:
     std::vector<double> get_result();
@@ -77,7 +77,6 @@ private:
     //stores the metallicity resampled model
     std::vector<double> model;
     //sizes of model data points
-    int nspecsteps;
     int ntimesteps;
     
     

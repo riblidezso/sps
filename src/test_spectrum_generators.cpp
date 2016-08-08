@@ -5,8 +5,7 @@
 #include "spectrum_generator.h"
 #include "spectrum_generator_cpu.h"
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]){
     //beggining and end of execution times
     std::chrono::high_resolution_clock::time_point begin, end;
     begin = std::chrono::high_resolution_clock::now();
@@ -90,13 +89,14 @@ int main(int argc, char* argv[])
         
         //compare them
         double diff=0;
-        for(int j=0;j<result_cpu.size();j++){
-            diff+=(result_cpu[i] - result_opencl[i] ) * (result_cpu[i] - result_opencl[i] ) /(result_cpu[i] * result_opencl[i] );
+        for(size_t j=0;j<result_cpu.size();j++){
+            diff+=(result_cpu[j] - result_opencl[j] ) * (result_cpu[j] - result_opencl[j] ) /(result_cpu[j] * result_opencl[j] );
         }
         diff=diff/result_cpu.size();
+//std::cout<<"relative average squred error is: " <<diff<<" "<<std::endl;
         
         //fail if difference is too big
-        if (diff>1e-6){
+        if (diff>1e-10){
             std::cerr<<"\nERROR! cpu only and opencl implementations give different results"<<std::endl;
             std::cout<<"relative average squred error is: " <<diff<<" "<<std::endl;
             exit(1);
