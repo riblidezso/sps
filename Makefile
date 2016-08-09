@@ -12,7 +12,7 @@ CXX = g++
 LINK = $(CXX)
 
 # Flags
-CXXFLAGS = -std=c++11 -I$(IDIR) -I$(CL_H) -W -Wall
+CXXFLAGS = -O3 -std=c++11 -I$(IDIR) -I$(CL_H) -W -Wall
 
 #Opencl library place (Apple)
 ifeq ($(shell uname), Darwin) # Apple

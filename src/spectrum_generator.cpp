@@ -1,9 +1,11 @@
 #include "spectrum_generator.h"
 
-spectrum_generator::spectrum_generator(sps_data& input_data,std::string kernel_filename,int input_platform,int input_device){
-    
+spectrum_generator::spectrum_generator(sps_data& input_data,std::string kernel_filename,int input_platform,int input_device,std::string sfr_mode){
     //copy and move data from model
     copy_data(input_data);
+    
+    //set sfr
+    this->sfr_mode=sfr_mode;
     
     //initialize everything with opencl
     opencl_initialize(kernel_filename,input_platform,input_device);
@@ -412,6 +414,11 @@ int spectrum_generator::opencl_create_buffers(){
         std::cerr<<"ERROR creating buffers: "<<status<<std::endl;
         exit(1);
     }
+    sfr_d = clCreateBuffer(context, CL_MEM_READ_ONLY, ntimesteps * sizeof(cl_float),NULL, &status);
+    if (status!=0){
+        std::cerr<<"ERROR creating buffers: "<<status<<std::endl;
+        exit(1);
+    }
     
     
     //read and write
@@ -458,11 +465,16 @@ int spectrum_generator::opencl_create_kernels(){
     cl_int status=0;
     
 	// Create kernel objects
-	this->kernel_spec_gen = clCreateKernel(this->program,"spec_gen", &status);
+	this->kernel_spec_gen_exp = clCreateKernel(this->program,"spec_gen_exp", &status);
 	if (status!=0){
-		std::cerr<<"ERROR creating kernel_spec_gen: "<<status<<std::endl;
+		std::cerr<<"ERROR creating kernel_spec_gen_exp: "<<status<<std::endl;
 		exit(1);
 	}
+    this->kernel_spec_gen_file = clCreateKernel(this->program,"spec_gen_file", &status);
+    if (status!=0){
+        std::cerr<<"ERROR creating kernel_spec_gen_file: "<<status<<std::endl;
+        exit(1);
+    }
 	this->kernel_vel_disp = clCreateKernel(this->program,"mask_veloc_disp", &status);
 	if (status!=0){
 		std::cerr<<"ERROR creating kernel_vel_disp: "<<status<<std::endl;
@@ -477,7 +489,20 @@ int spectrum_generator::opencl_create_kernels(){
 	if (status!=0){
 		std::cerr<<"ERROR creating kernel_chi_calc: "<<status<<std::endl;
 		exit(1);
-	}	
+	}
+    
+    
+    //which kernel is used
+    if(this->sfr_mode=="exponential"){
+        this->kernel_spec_gen=this->kernel_spec_gen_exp;
+    }
+    else if(this->sfr_mode=="file"){
+        this->kernel_spec_gen=this->kernel_spec_gen_file;
+    }
+    else{
+        std::cerr<<"ERROR sfr mode is wrong";
+        throw 1;
+    }
 
 	return 0;
 }
@@ -500,7 +525,7 @@ int spectrum_generator::set_initial_kernel_args()
 	//some will be changed/calculated later
 	//those will be set later
 
-	//kernel_spec_gen
+	//kernel_spec_gen_exp
     cl_kernel kern = this->kernel_spec_gen;
 	status = clSetKernelArg(kern, 0, sizeof(cl_mem), &this->resampled_model_d);
 	status |= clSetKernelArg(kern, 1, sizeof(cl_mem), &this->time_d);
@@ -517,10 +542,13 @@ int spectrum_generator::set_initial_kernel_args()
 	
 	status |= clSetKernelArg(kern, 10, sizeof(int), &this->mes_nspecsteps);
 	status |= clSetKernelArg(kern, 11, sizeof(int), &this->ntimesteps);
+    if(this->sfr_mode=="file"){
+        status |= clSetKernelArg(kern, 14, sizeof(cl_mem), &this->sfr_d);
+    }
 	//error check
 	if (status!=0){
 		std::cerr<<"ERROR setting kernel spec_gen arguments: "<<status<<std::endl;
-		exit(1);
+        throw 1;
 	}
 
 
@@ -579,6 +607,30 @@ int spectrum_generator::set_initial_kernel_args()
 // functions during operation
 /////////////////////////////////////////////////////////////////////////////
 
+
+/*
+ set model parameters with sfr vector
+ */
+int spectrum_generator::set_params( std::map<std::string,double>& parameters, std::vector<double>& sfr  ){
+    //set numerical params
+    set_params(parameters);
+    
+    //set sfr
+    if(this->sfr_mode=="file"){
+        this->sfr=std::vector<cl_float>(sfr.begin(),sfr.end());
+    
+        //copy sfr to device
+        cl_uint status = clEnqueueWriteBuffer(this->commandQueue, this->sfr_d, CL_TRUE, 0, this->ntimesteps * sizeof(cl_float) , this->sfr.data(), 0, NULL,NULL);
+        if (status!=0){
+            std::cerr<<"ERROR writing buffer for sfr: "<<status<<std::endl;
+            exit(1);
+        }
+    }
+    
+    return 0;
+}
+
+
 /*
  set model parameters
  */
@@ -610,7 +662,7 @@ int spectrum_generator::set_params( std::map<std::string,double>& parameters ){
         this->vdisp = parameters["vdisp"];
     }
     
-    //change kernel params too
+    //change numerical kernel params too
     change_kernel_params();
 
 	return 0;
@@ -634,15 +686,19 @@ int spectrum_generator::change_kernel_params(){
 			break;
 		}
 	}
+    
+
 
 	//set  the kernel arguments that has changed
-    cl_kernel kern = this->kernel_spec_gen;
+    cl_kernel kern=this->kernel_spec_gen;
 	status = clSetKernelArg(kern, 12, sizeof(cl_float), &this->dust_tau_v);
 	status |= clSetKernelArg(kern, 13, sizeof(cl_float), &this->dust_mu);
-	status |= clSetKernelArg(kern, 14, sizeof(cl_float), &this->sfr_tau);
 	status |= clSetKernelArg(kern, 15, sizeof(cl_float), &this->age);
 	status |= clSetKernelArg(kern, 16, sizeof(cl_float), &this->metall);
 	status |= clSetKernelArg(kern, 17, sizeof(int), &modelno);
+    if(this->sfr_mode=="exponential"){
+        status |= clSetKernelArg(kern, 14, sizeof(cl_float), &this->sfr_tau);
+    }
 	if (status!=0){
 		std::cerr<<"ERROR setting kernel_spec_gen arguments: "<<status<<std::endl;
 		exit(1);
@@ -843,7 +899,8 @@ int spectrum_generator::clean_resources(){
 
 	//Clean the resources.
 	//release kernels
-	status = clReleaseKernel(kernel_spec_gen);
+	status = clReleaseKernel(kernel_spec_gen_exp);
+    status = clReleaseKernel(kernel_spec_gen_file);
 	status = clReleaseKernel(kernel_chi_calc);
 	status = clReleaseKernel(kernel_vel_disp);
 

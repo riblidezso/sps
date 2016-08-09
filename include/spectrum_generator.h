@@ -24,7 +24,7 @@ class spectrum_generator{
 public:
 
 //constructor
-	spectrum_generator(sps_data& input_data,std::string kernel_filename,int input_platform,int input_device);
+	spectrum_generator(sps_data& input_data,std::string kernel_filename,int input_platform,int input_device,std::string sfr_mode);
 
 /*
  FUNCTIONS
@@ -61,6 +61,7 @@ private:
 //functions called during operation
     
 public:
+    int set_params( std::map<std::string,double>& parameters, std::vector<double>& sfr  );
     int set_params( std::map<std::string,double>& parameters );
 private:
     int change_kernel_params();
@@ -121,6 +122,10 @@ private:
 
 //model parameters
     
+    //sfr mode
+    std::string sfr_mode;
+    std::vector<cl_float> sfr;
+    
 	//-age is the beggining time of the sytnhesis
 	//-sfr_tau: now SFR is an exponential decay
 	//sfr_tau is the time constant of the decay
@@ -138,8 +143,8 @@ private:
 
 //kernels
     
-	//generates the spectra with no vdisp
-	cl_kernel kernel_spec_gen;
+	//generates the spectra with no vdisp, sfr from file or exponential
+	cl_kernel kernel_spec_gen,kernel_spec_gen_exp,kernel_spec_gen_file;
     
 	//adds vdisp (this is a different kernel, because
 	//the convolution of the spectra is not fully paralel,
@@ -157,7 +162,7 @@ private:
 //buffers on the GPU (other device) (last "d" indicates device)
 	
     //buffers to read on GPU
-	cl_mem time_d,wavel_d,resampled_model_d;
+    cl_mem time_d,wavel_d,resampled_model_d,sfr_d;
 	cl_mem mes_spec_d,mes_spec_err_d,mes_spec_mask_d;
 	
     //buffers to read and write on GPU

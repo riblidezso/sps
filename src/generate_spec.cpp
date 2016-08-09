@@ -35,8 +35,7 @@ int main(int argc, char* argv[]){
     /*
      Read param file
      */
-    std::vector<std::map<std::string,double> > param_list;
-    param_list=my_sps_options.read_param_file(argv[2]);
+    my_sps_options.read_param_file(argv[2]);
     
 
     ///////////////////////////////////////////////////////////////
@@ -52,7 +51,7 @@ int main(int argc, char* argv[]){
     /*
      Spectrum generator class
      */
-    spectrum_generator my_spec_gen(my_sps_data,"spsfast_kernels.cl",my_sps_options.platform,my_sps_options.device);
+    spectrum_generator my_spec_gen(my_sps_data,"spsfast_kernels.cl",my_sps_options.platform,my_sps_options.device,my_sps_options.sfr_mode);
     
     ///////////////////////////////////////////////////////////////
     /*
@@ -60,10 +59,9 @@ int main(int argc, char* argv[]){
      */
     std::cout<<"\nGenerating spectra ...:\n";
     std::vector< std::vector<cl_float> > results;
-    int i=0;
-    for (auto params : param_list){
+    for (size_t i=0;i<my_sps_options.num_params.size();i++){
         //set params
-        my_spec_gen.set_params(params);
+        my_spec_gen.set_params(my_sps_options.num_params[i],my_sps_options.sfr_list[i]);
         
         //generate spectrum in device
         my_spec_gen.generate_spectrum();
@@ -72,8 +70,7 @@ int main(int argc, char* argv[]){
         results.push_back(my_spec_gen.get_result());
         
         //report
-        i++;
-        if( (i % 1000) == 0 )
+        if( (i % 1000) == 0 && i!=0 )
             std::cout<<i<<" spectra generated "<<std::endl;
         if( (i % 50) == 1 ){
             std::cout<<".";

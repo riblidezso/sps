@@ -55,7 +55,7 @@ int main(int argc, char* argv[]){
     /*
      Spectrum generator class
      */
-    spectrum_generator my_spec_gen(my_sps_data,"spsfast_kernels.cl",my_sps_options.platform,my_sps_options.device);
+    spectrum_generator my_spec_gen(my_sps_data,"spsfast_kernels.cl",my_sps_options.platform,my_sps_options.device,"exponential");
 
 
     ///////////////////////////////////////////////////////////////

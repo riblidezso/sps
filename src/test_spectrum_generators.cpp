@@ -35,8 +35,7 @@ int main(int argc, char* argv[]){
     /*
      Read param file
      */
-    std::vector<std::map<std::string,double> > param_list;
-    param_list=my_sps_options.read_param_file(argv[2]);
+    my_sps_options.read_param_file(argv[2]);
     
 
     ///////////////////////////////////////////////////////////////
@@ -52,14 +51,14 @@ int main(int argc, char* argv[]){
     /*
      Spectrum generator class
      */
-    spectrum_generator my_spec_gen(my_sps_data,"fit_w_err.cl",my_sps_options.platform,my_sps_options.device);
+    spectrum_generator my_spec_gen(my_sps_data,"spsfast_kernels.cl",my_sps_options.platform,my_sps_options.device,my_sps_options.sfr_mode);
 
     
     ///////////////////////////////////////////////////////////////
     /*
      Spectrum generator class cpu
      */
-    spectrum_generator_cpu my_spec_gen_cpu(my_sps_data);
+    spectrum_generator_cpu my_spec_gen_cpu(my_sps_data,my_sps_options.sfr_mode);
 
     ///////////////////////////////////////////////////////////////
     /*
@@ -70,17 +69,16 @@ int main(int argc, char* argv[]){
     std::vector< double> result_opencl,result_cpu;
     std::vector<cl_float> temp_res_opencl;
     
-    int i=0;
-    for (auto params : param_list){
+    for (size_t i=0;i<my_sps_options.num_params.size();i++){
         //set params
-        my_spec_gen_cpu.set_params(params);
+        my_spec_gen_cpu.set_params(my_sps_options.num_params[i],my_sps_options.sfr_list[i]);
         //generate spectrum in device
         my_spec_gen_cpu.generate_spectrum();
         //get the result
         result_cpu=my_spec_gen_cpu.get_result();
         
         //set params
-        my_spec_gen.set_params(params);
+        my_spec_gen.set_params(my_sps_options.num_params[i],my_sps_options.sfr_list[i]);
         //generate spectrum in device
         my_spec_gen.generate_spectrum();
         //get the result
@@ -93,18 +91,18 @@ int main(int argc, char* argv[]){
             diff+=(result_cpu[j] - result_opencl[j] ) * (result_cpu[j] - result_opencl[j] ) /(result_cpu[j] * result_opencl[j] );
         }
         diff=diff/result_cpu.size();
-//std::cout<<"relative average squred error is: " <<diff<<" "<<std::endl;
+        //std::cout<<"relative average squred error is: " <<diff<<" "<<std::endl;
         
         //fail if difference is too big
         if (diff>1e-10){
             std::cerr<<"\nERROR! cpu only and opencl implementations give different results"<<std::endl;
             std::cout<<"relative average squred error is: " <<diff<<" "<<std::endl;
+            std::cout<<i<<std::endl;
             exit(1);
         }
         
         //report
-        i++;
-        if( (i % 1000) == 0 )
+        if( (i % 1000) == 0 && i!=0 )
             std::cout<<i<<" spectra generated "<<std::endl;
         if( (i % 50) == 1 ){
             std::cout<<".";

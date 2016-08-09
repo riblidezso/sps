@@ -79,9 +79,9 @@ int sps_options::read_config(std::string input_filename)
 
 
 /*
- read parameter file into a vector of maps
+ read parameter file
 */
-std::vector<std::map<std::string,double> > sps_options::read_param_file(std::string infilename){
+int sps_options::read_param_file(std::string infilename){
     //open file
     std::ifstream infile(infilename.c_str());
     if(! infile.is_open() ){
@@ -99,25 +99,139 @@ std::vector<std::map<std::string,double> > sps_options::read_param_file(std::str
         param_names.push_back(param_name);
     }
     
+    //check params
+    check_params(param_names);
+    
     //read params from the other lines
-    std::vector<std::map<std::string,double> > params;
     while ( getline (infile,line) ){
         std::map<std::string,double> temp_params;
-        double value;
+        std::string temp_str;
         
         temp_sstr.clear();
         temp_sstr<<line;
         
         int i=0;
-        while(temp_sstr>>value){
-            temp_params.insert(std::pair<std::string,double>(param_names[i],value));
+        while(temp_sstr>>temp_str){
+            //read numerical params
+            if (param_names[i]!="sfr_filename"){
+                temp_params.insert(std::pair<std::string,double>(param_names[i],strtod(temp_str.c_str(),NULL)));
+            }
+            //read sfr fileanem param
+            else {
+                this->sfr_filenames.push_back(temp_str);
+            }
             i++;
         }
-        params.push_back(temp_params);
+        //save params
+        this->num_params.push_back(temp_params);
     }
     
-    infile.close();
-    return params;
+    //read sfr files
+    read_sfr_file_list();
     
+    infile.close();
+    return 0;
+    
+}
+
+
+/*
+ check if correct input parameters are used
+ */
+int sps_options::check_params(std::vector<std::string> param_names){
+    std::set<std::string> param_name_set(param_names.begin(),param_names.end());
+    std::set<std::string>::iterator it;
+    
+    //check if all necessary params are used
+    std::vector<std::string> necessary_params={"age","dust_tau_v","dust_mu","metall","vdisp"};
+    for (auto param : necessary_params){
+        it = param_name_set.find(param);
+        
+        //not used: error
+        if(it == param_name_set.end()){
+            std::cerr<<"\nERROR "<<param<<"NOT USED IN PARAM FILE\n"<<std::endl;
+            exit(1);
+        }
+    }
+    
+    //check star formation mode
+    check_sfr_mode(param_names);
+    
+    return 0;
+}
+
+
+/*
+ check sfr mode
+ */
+int sps_options::check_sfr_mode(std::vector<std::string> param_names){
+    std::set<std::string> param_name_set(param_names.begin(),param_names.end());
+    std::set<std::string>::iterator it1,it2;
+    it1 = param_name_set.find("sfr_tau");
+    it2 = param_name_set.find("sfr_filename");
+    
+    //both used: error
+    if(it1 != param_name_set.end() && it2 != param_name_set.end()){
+        std::cerr<<"\nERROR BOTH SFR_TAU AND SFR_FILENAME IN PARAM FILE"<<"\n"<<std::endl;
+        std::cerr<<"\nPLEASE ONLY USE ONE OF THEM"<<"\n"<<std::endl;
+        exit(1);
+    }
+    //exponential start formation
+    else if(it1 != param_name_set.end() ){
+        std::cout<<"Using exponential star formation rate\n";
+        this->sfr_mode="exponential";
+    }
+    //start formation  from file
+    else if(it2 != param_name_set.end() ){
+        std::cout<<"Using star formation rate from file\n";
+        this->sfr_mode="file";
+    }
+    //no start formation: error
+    else{
+        std::cerr<<"\nERROR NO STAR FORMATION RATE SPECIFIED"<<"\n"<<std::endl;
+        exit(1);
+    }
+    
+    return 0;
+}
+
+
+/*
+ read sfr files
+ */
+int sps_options::read_sfr_file_list(){
+    for (auto sfr_fname : sfr_filenames){
+        this->sfr_list.push_back(read_sfr_file(sfr_fname));
+    }
+    return 0;
+}
+
+/*
+ read one sfr from a file
+ */
+std::vector<double> sps_options::read_sfr_file(std::string infilename){
+    //open file
+    std::ifstream infile(infilename.c_str());
+    if(! infile.is_open() ){
+        std::cerr<<"\nERROR CAN'T OPEN SFR FILE: "<<infilename<<"\n"<<std::endl;
+        exit(1);
+    }
+    
+    //read sfr from each line
+    std::string line;
+    std::vector<double> temp_sfr;
+    while ( getline (infile,line) ){
+        temp_sfr.push_back(strtod(line.c_str(),NULL));
+    }
+    
+    //check sfr length
+    if (temp_sfr.size()!=NUM_TIME_STEPS){
+        std::cerr<<"\nERROR SFR LENGTH AND MODEL TIMESTEP DONT MATCH\n";
+        std::cerr<<"\tMODEL: "<<NUM_TIME_STEPS<<std::endl;
+        std::cerr<<"\t"<<infilename<<": "<<temp_sfr.size()<<std::endl;
+        exit(1);
+    }
+
+    return temp_sfr;
 }
 

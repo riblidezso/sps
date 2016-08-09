@@ -53,7 +53,7 @@ int main(int argc, char* argv[]){
     /*
      Spectrum generator class
      */
-    spectrum_generator_cpu my_spec_gen(my_sps_data);
+    spectrum_generator_cpu my_spec_gen(my_sps_data,"exponential");
 
 
     ///////////////////////////////////////////////////////////////

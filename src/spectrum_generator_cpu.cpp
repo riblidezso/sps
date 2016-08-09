@@ -1,8 +1,11 @@
 #include "spectrum_generator_cpu.h"
 
-spectrum_generator_cpu::spectrum_generator_cpu(sps_data& input_data){
+spectrum_generator_cpu::spectrum_generator_cpu(sps_data& input_data,std::string sfr_mode){
     //copy and move data from model
     copy_and_move_data(input_data);
+    
+    //record the sfr mode: expoential of from file
+    this->sfr_mode=sfr_mode;
 }
 
 
@@ -43,6 +46,23 @@ int spectrum_generator_cpu::copy_and_move_data(sps_data& input_data){
 /////////////////////////////////////////////////////////////////////////////
 // functions during operation
 /////////////////////////////////////////////////////////////////////////////
+
+/*
+ set model parameters with sfr vector
+ */
+int spectrum_generator_cpu::set_params( std::map<std::string,double>& parameters, std::vector<double>& sfr  ){
+    //set numerical params
+    set_params(parameters);
+    
+    //set sfr
+    if (this->sfr_mode=="file"){
+        this->sfr=sfr;
+    }
+
+    return 0;
+}
+
+
 
 /*
  set model parameters
@@ -136,10 +156,29 @@ int spectrum_generator_cpu::metall_interpol(int wave){
     return 0;
 }
 
+
 /*
- calculate the convolution of the star formation history an ssp models
+ calculate the convolution of the star formation history and ssp models
  */
 int spectrum_generator_cpu::conv_model_w_sfh(int wave){
+    if(this->sfr_mode=="exponential"){
+        return conv_model_w_sfh_exp(wave);
+    }
+    else if(this->sfr_mode=="file"){
+        return conv_model_w_sfh_vector(wave);
+    }
+    else{
+        std::cerr<<"ERROR";
+        exit(1);
+    }
+}
+
+
+/*
+ calculate the convolution of the star formation history and ssp models
+    -expoential sfr
+ */
+int spectrum_generator_cpu::conv_model_w_sfh_exp(int wave){
     int i;
     
     //first period until 1e7
@@ -164,6 +203,37 @@ int spectrum_generator_cpu::conv_model_w_sfh(int wave){
     
     return 0;
 }
+
+/*
+ calculate the convolution of the star formation history and ssp models
+    - sfr from vector
+ */
+int spectrum_generator_cpu::conv_model_w_sfh_vector(int wave){
+    int i;
+    
+    //first period until 1e7
+    double temp=0;
+    temp+= this->time[0] * this->model[wave] * exp((this->time[0]-age)/this->sfr_tau);
+    for(i=1; ( this->time[i] <= 1e7 ) && ( this->time[i] <= this->age ) ;i++){
+        temp+= (this->time[i]-this->time[i-1]) * this->model[ i*this->mes_nspecsteps + wave] * this->sfr[i];
+    }
+    
+    //second period
+    float temp1=0;
+    for(; ( this->time[i] < this->age ) && ( (i+1) <this->ntimesteps ) ;i++){
+        temp1+= (this->time[i]-this->time[i-1]) * this->model[ i*this->mes_nspecsteps + wave] * this->sfr[i];
+    }
+    temp1+= (this->age-this->time[i-1]) *  this->model[i*this->mes_nspecsteps + wave]  ;
+    
+    //part of dust exponent is constant for a wavel
+    double  exponent=pow(this->mes_spec_wavel[wave]/5500.0,-0.7);
+    
+    //add the 2 periods
+    this->result_no_vel[wave] = temp * exp(-exponent*this->dust_tau_v) + temp1 * exp(-exponent*this->dust_tau_v*this->dust_mu);
+    
+    return 0;
+}
+
 
 /*
  convolute result with a gaussian kernel for velocity dispersion

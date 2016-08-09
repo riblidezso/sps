@@ -16,7 +16,7 @@ class spectrum_generator_cpu{
 public:
 
 //constructor
-	spectrum_generator_cpu(sps_data& input_data);
+    spectrum_generator_cpu(sps_data& input_data,std::string sfr_mode);
 
 /*
  FUNCTIONS
@@ -33,6 +33,7 @@ public:
 //functions called during operation
     
 public:
+    int set_params( std::map<std::string,double>& parameters, std::vector<double>& sfr  );
     int set_params( std::map<std::string,double>& parameters );
 
 public:
@@ -40,6 +41,8 @@ public:
 private:
     int metall_interpol(int wave);
     int conv_model_w_sfh(int wave);
+    int conv_model_w_sfh_exp(int wave);
+    int conv_model_w_sfh_vector(int wave);
     int convol_vel_disp(int wave);
     
 public:
@@ -98,6 +101,9 @@ private:
 
 //model parameters
     
+    //sfr from file of exponential
+    std::string sfr_mode;
+    
 	//-age is the beggining time of the sytnhesis
 	//-sfr_tau: now SFR is an exponential decay
 	//sfr_tau is the time constant of the decay
@@ -107,6 +113,9 @@ private:
 	// Charlot & Fall dust model
 	//-vdisp is the velocity dispersion in velocity of light units
 	double dust_tau_v,dust_mu,sfr_tau, age, metall, vdisp;
+    
+    //start formation in vector
+    std::vector<double> sfr;
 
 
 //result
