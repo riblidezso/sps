@@ -16,7 +16,7 @@ class spectrum_generator_cpu{
 public:
 
 //constructor
-    spectrum_generator_cpu(sps_data& input_data,std::string sfr_mode);
+    spectrum_generator_cpu(sps_data& input_data);
 
 /*
  FUNCTIONS
@@ -33,16 +33,18 @@ public:
 //functions called during operation
     
 public:
-    int set_params( std::map<std::string,double>& parameters, std::vector<double>& sfr  );
+    int generate_spectrum(std::map<std::string,double>& parameters, std::vector<double>& sfr );
+    int generate_spectrum(std::map<std::string,double>& parameters );
+    
+private:
+    int generate_spectrum(std::string);
     int set_params( std::map<std::string,double>& parameters );
-
-public:
-	int generate_spectrum();
+    
 private:
     int metall_interpol(int wave);
-    int conv_model_w_sfh(int wave);
-    int conv_model_w_sfh_exp(int wave);
-    int conv_model_w_sfh_vector(int wave);
+    int conv_model_w_sfr(int wave,std::string sfr_mode);
+    int conv_model_w_sfr_exp(int wave);
+    int conv_model_w_sfr_vector(int wave);
     int convol_vel_disp(int wave);
     
 public:
@@ -100,9 +102,6 @@ private:
 
 
 //model parameters
-    
-    //sfr from file of exponential
-    std::string sfr_mode;
     
 	//-age is the beggining time of the sytnhesis
 	//-sfr_tau: now SFR is an exponential decay

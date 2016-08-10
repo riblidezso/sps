@@ -53,7 +53,7 @@ int main(int argc, char* argv[]){
     /*
      Spectrum generator class
      */
-    spectrum_generator_cpu my_spec_gen(my_sps_data,"exponential");
+    spectrum_generator_cpu my_spec_gen(my_sps_data);
 
 
     ///////////////////////////////////////////////////////////////
@@ -64,10 +64,9 @@ int main(int argc, char* argv[]){
 	for(mcmc_fitter.iter= 0; mcmc_fitter.iter<(mcmc_fitter.maxiter);mcmc_fitter.iter++){
         //do one step in parameter space
 		mcmc_fitter.change_params();
-        my_spec_gen.set_params(mcmc_fitter.parameters);
 
         //generate spectrum
-        my_spec_gen.generate_spectrum();
+        my_spec_gen.generate_spectrum(mcmc_fitter.parameters);
         //compare it to measurement
         double chi = my_spec_gen.compare_to_measurement();
 		
@@ -87,10 +86,8 @@ int main(int argc, char* argv[]){
     /*
         Repeat the best fit
      */
-    //set best params
-    my_spec_gen.set_params(mcmc_fitter.best_parameters);
-    //generate spectrum
-    my_spec_gen.generate_spectrum();
+    //generate spectrum w best params
+    my_spec_gen.generate_spectrum(mcmc_fitter.best_parameters);
     //compare it to measurement (necessary for scaling)
     my_spec_gen.compare_to_measurement();
     //read back model to host

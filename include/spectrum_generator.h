@@ -24,7 +24,7 @@ class spectrum_generator{
 public:
 
 //constructor
-	spectrum_generator(sps_data& input_data,std::string kernel_filename,int input_platform,int input_device,std::string sfr_mode);
+	spectrum_generator(sps_data& input_data,std::string kernel_filename,int input_platform,int input_device);
 
 /*
  FUNCTIONS
@@ -59,15 +59,17 @@ private:
 
 
 //functions called during operation
-    
-public:
-    int set_params( std::map<std::string,double>& parameters, std::vector<double>& sfr  );
-    int set_params( std::map<std::string,double>& parameters );
-private:
-    int change_kernel_params();
 
 public:
-	int generate_spectrum();
+    int generate_spectrum(std::map<std::string,double>& parameters, std::vector<double>& sfr);
+    int generate_spectrum(std::map<std::string,double>& parameters);
+private:
+    int generate_spectrum(cl_kernel kernel_spec_gen);
+    int set_params( std::map<std::string,double>& parameters, std::vector<double>& sfr);
+    int set_params( std::map<std::string,double>& parameters, cl_kernel kernel_spec_gen );
+    int change_kernel_params(cl_kernel kernel_spec_gen);
+
+public:
     double compare_to_measurement();
 private:
     cl_float get_factor_to_scale_spectra_to_measurement();
@@ -144,7 +146,7 @@ private:
 //kernels
     
 	//generates the spectra with no vdisp, sfr from file or exponential
-	cl_kernel kernel_spec_gen,kernel_spec_gen_exp,kernel_spec_gen_file;
+	cl_kernel kernel_spec_gen_exp,kernel_spec_gen_file;
     
 	//adds vdisp (this is a different kernel, because
 	//the convolution of the spectra is not fully paralel,

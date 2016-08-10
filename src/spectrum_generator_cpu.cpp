@@ -1,11 +1,8 @@
 #include "spectrum_generator_cpu.h"
 
-spectrum_generator_cpu::spectrum_generator_cpu(sps_data& input_data,std::string sfr_mode){
+spectrum_generator_cpu::spectrum_generator_cpu(sps_data& input_data){
     //copy and move data from model
     copy_and_move_data(input_data);
-    
-    //record the sfr mode: expoential of from file
-    this->sfr_mode=sfr_mode;
 }
 
 
@@ -47,21 +44,28 @@ int spectrum_generator_cpu::copy_and_move_data(sps_data& input_data){
 // functions during operation
 /////////////////////////////////////////////////////////////////////////////
 
+/////////////////////////////////////////////////////////////////////////////
+
 /*
- set model parameters with sfr vector
+ generate spectrum with sfh file
  */
-int spectrum_generator_cpu::set_params( std::map<std::string,double>& parameters, std::vector<double>& sfr  ){
-    //set numerical params
-    set_params(parameters);
-    
-    //set sfr
-    if (this->sfr_mode=="file"){
-        this->sfr=sfr;
-    }
+int spectrum_generator_cpu::generate_spectrum(std::map<std::string,double>& parameters, std::vector<double>& sfr ){
+    this->sfr=sfr;
+    this->set_params(parameters);
+    this->generate_spectrum("file");
 
     return 0;
 }
 
+/*
+ generate spectrum in exponential mode
+ */
+int spectrum_generator_cpu::generate_spectrum(std::map<std::string,double>& parameters ){
+    this->set_params( parameters);
+    this->generate_spectrum("exponential");
+    
+    return 0;
+}
 
 
 /*
@@ -94,34 +98,29 @@ int spectrum_generator_cpu::set_params( std::map<std::string,double>& parameters
     if(it != parameters.end()){
         this->vdisp = parameters["vdisp"];
     }
-
     
-    //initalize results
-    for( int i=0;i<this->mes_nspecsteps;i++) {
-        //result[i]=0;
-    }
-    
-	return 0;
+    return 0;
 }
 
-/////////////////////////////////////////////////////////////////////////////
+
 
 /*
  generate spectrum
  */
-int spectrum_generator_cpu::generate_spectrum(){
+int spectrum_generator_cpu::generate_spectrum(std::string sfr_mode){
     for(int i=0;i<this->mes_nspecsteps;i++){
         metall_interpol(i);
     }
     for(int i=0;i<this->mes_nspecsteps;i++){
-        conv_model_w_sfh(i);
+        conv_model_w_sfr(i,sfr_mode);
     }
     for(int i=0;i<this->mes_nspecsteps;i++){
         convol_vel_disp(i);
     }
-
+    
     return 0;
 }
+
 
 /*
  interpolate models in metallicity
@@ -160,12 +159,12 @@ int spectrum_generator_cpu::metall_interpol(int wave){
 /*
  calculate the convolution of the star formation history and ssp models
  */
-int spectrum_generator_cpu::conv_model_w_sfh(int wave){
-    if(this->sfr_mode=="exponential"){
-        return conv_model_w_sfh_exp(wave);
+int spectrum_generator_cpu::conv_model_w_sfr(int wave,std::string sfr_mode){
+    if(sfr_mode=="exponential"){
+        return conv_model_w_sfr_exp(wave);
     }
-    else if(this->sfr_mode=="file"){
-        return conv_model_w_sfh_vector(wave);
+    else if(sfr_mode=="file"){
+        return conv_model_w_sfr_vector(wave);
     }
     else{
         std::cerr<<"ERROR";
@@ -178,7 +177,7 @@ int spectrum_generator_cpu::conv_model_w_sfh(int wave){
  calculate the convolution of the star formation history and ssp models
     -expoential sfr
  */
-int spectrum_generator_cpu::conv_model_w_sfh_exp(int wave){
+int spectrum_generator_cpu::conv_model_w_sfr_exp(int wave){
     int i;
     
     //first period until 1e7
@@ -208,7 +207,7 @@ int spectrum_generator_cpu::conv_model_w_sfh_exp(int wave){
  calculate the convolution of the star formation history and ssp models
     - sfr from vector
  */
-int spectrum_generator_cpu::conv_model_w_sfh_vector(int wave){
+int spectrum_generator_cpu::conv_model_w_sfr_vector(int wave){
     int i;
     
     //first period until 1e7

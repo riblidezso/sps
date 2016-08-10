@@ -51,14 +51,14 @@ int main(int argc, char* argv[]){
     /*
      Spectrum generator class
      */
-    spectrum_generator my_spec_gen(my_sps_data,"spsfast_kernels.cl",my_sps_options.platform,my_sps_options.device,my_sps_options.sfr_mode);
+    spectrum_generator my_spec_gen(my_sps_data,"spsfast_kernels.cl",my_sps_options.platform,my_sps_options.device);
 
     
     ///////////////////////////////////////////////////////////////
     /*
      Spectrum generator class cpu
      */
-    spectrum_generator_cpu my_spec_gen_cpu(my_sps_data,my_sps_options.sfr_mode);
+    spectrum_generator_cpu my_spec_gen_cpu(my_sps_data);
 
     ///////////////////////////////////////////////////////////////
     /*
@@ -70,17 +70,13 @@ int main(int argc, char* argv[]){
     std::vector<cl_float> temp_res_opencl;
     
     for (size_t i=0;i<my_sps_options.num_params.size();i++){
-        //set params
-        my_spec_gen_cpu.set_params(my_sps_options.num_params[i],my_sps_options.sfr_list[i]);
         //generate spectrum in device
-        my_spec_gen_cpu.generate_spectrum();
+        my_spec_gen_cpu.generate_spectrum(my_sps_options.num_params[i],my_sps_options.sfr_list[i]);
         //get the result
         result_cpu=my_spec_gen_cpu.get_result();
         
-        //set params
-        my_spec_gen.set_params(my_sps_options.num_params[i],my_sps_options.sfr_list[i]);
         //generate spectrum in device
-        my_spec_gen.generate_spectrum();
+        my_spec_gen.generate_spectrum(my_sps_options.num_params[i],my_sps_options.sfr_list[i]);
         //get the result
         temp_res_opencl=my_spec_gen.get_result();
         result_opencl = std::vector<double>(temp_res_opencl.begin(),temp_res_opencl.end());

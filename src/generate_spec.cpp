@@ -51,7 +51,7 @@ int main(int argc, char* argv[]){
     /*
      Spectrum generator class
      */
-    spectrum_generator my_spec_gen(my_sps_data,"spsfast_kernels.cl",my_sps_options.platform,my_sps_options.device,my_sps_options.sfr_mode);
+    spectrum_generator my_spec_gen(my_sps_data,"spsfast_kernels.cl",my_sps_options.platform,my_sps_options.device);
     
     ///////////////////////////////////////////////////////////////
     /*
@@ -59,12 +59,9 @@ int main(int argc, char* argv[]){
      */
     std::cout<<"\nGenerating spectra ...:\n";
     std::vector< std::vector<cl_float> > results;
-    for (size_t i=0;i<my_sps_options.num_params.size();i++){
-        //set params
-        my_spec_gen.set_params(my_sps_options.num_params[i],my_sps_options.sfr_list[i]);
-        
+    for (size_t i=0;i<my_sps_options.num_params.size();i++){        
         //generate spectrum in device
-        my_spec_gen.generate_spectrum();
+        my_spec_gen.generate_spectrum(my_sps_options.num_params[i],my_sps_options.sfr_list[i]);
         
         //get the result
         results.push_back(my_spec_gen.get_result());
