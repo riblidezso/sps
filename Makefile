@@ -122,20 +122,9 @@ $(PYWRAP)/sps_fast_utils_cpu.o : $(PYWRAP)/utils_cpu.cpp
 
 
 
-#Building converter
-#$(BIN)/convert_ascii_2_bin : $(ODIR)/main_convert_ascii_2_bin.o  $(ODIR)/convert_ascii_2_bin.o
-#	$(LINK) -o $@ $^
-
-#$(ODIR)/main_convert_ascii_2_bin.o : $(SRC)/main_convert_ascii_2_bin.cpp
-#	$(CXX) -c -o  $@ $< $(CXXFLAGS)
-
-#$(ODIR)/convert_ascii_2_bin.o : $(SRC)/convert_ascii_2_bin.cpp $(IDIR)/convert_ascii_2_bin.h
-#	$(CXX) -c -o  $@ $< $(CXXFLAGS)
-
-
 .PHONY: clean
 
 clean:
-	rm -f $(ODIR)/*.o $(PYWRAP)/*.o $(BIN)/generate_spec  $(BIN)/generate_spec_cpu $(BIN)/test_spectrum_generators  $(BIN)/fit_spectrum $(BIN)/fit_spectrum_cpu 
+	rm -f $(ODIR)/*.o $(PYWRAP)/*.o $(PYWRAP)/*.so $(BIN)/generate_spec  $(BIN)/generate_spec_cpu $(BIN)/test_spectrum_generators  $(BIN)/fit_spectrum $(BIN)/fit_spectrum_cpu 
 
 
