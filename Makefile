@@ -24,15 +24,17 @@ endif
 
 # Paths
 BIN = bin
+PYWRAP = python_wrapper
 ODIR = bin/obj
 SRC = src
 IDIR = include
 
 
-
-
 # all target
-all: $(BIN)/generate_spec $(BIN)/generate_spec_cpu $(BIN)/test_spectrum_generators $(BIN)/fit_spectrum $(BIN)/fit_spectrum_cpu
+all: $(BIN)/generate_spec $(BIN)/generate_spec_cpu $(BIN)/test_spectrum_generators $(BIN)/fit_spectrum $(BIN)/fit_spectrum_cpu $(PYWRAP)/sps_fast_utils.so $(PYWRAP)/sps_fast_utils_cpu.so
+
+# cpu only target
+cpu_only: $(BIN)/generate_spec_cpu $(BIN)/fit_spectrum_cpu $(PYWRAP)/sps_fast_utils_cpu.so
 
 
 
@@ -85,16 +87,31 @@ $(BIN)/fit_spectrum : $(ODIR)/fit_spectrum.o $(ODIR)/spectrum_generator.o $(ODIR
 $(ODIR)/fit_spectrum.o : $(SRC)/fit_spectrum.cpp
 	$(CXX) -c -o  $@ $< $(CXXFLAGS)
 
-
 $(ODIR)/mcmc.o : $(SRC)/mcmc.cpp $(IDIR)/mcmc.h
 	$(CXX) -c -o  $@ $< $(CXXFLAGS)
 
 
-#Buildingi cpu only fitter
+#Building cpu only fitter
 $(BIN)/fit_spectrum_cpu: $(ODIR)/fit_spectrum_cpu.o $(ODIR)/spectrum_generator_cpu.o $(ODIR)/mcmc.o $(ODIR)/sps_data.o  $(ODIR)/sps_write.o $(ODIR)/sps_options.o
 	$(LINK) -o $@ $^ 
 
 $(ODIR)/fit_spectrum_cpu.o : $(SRC)/fit_spectrum_cpu.cpp
+	$(CXX) -c -o  $@ $< $(CXXFLAGS)
+
+
+#Builing the python wrapper
+$(PYWRAP)/sps_fast_utils.so: $(PYWRAP)/sps_fast_utils.o $(ODIR)/spectrum_generator.o $(ODIR)/sps_data.o  $(ODIR)/sps_write.o $(ODIR)/sps_options.o
+	$(LINK) -dynamiclib -o  $@ $^ $(LIBOPENCL)
+
+$(PYWRAP)/sps_fast_utils.o : $(PYWRAP)/utils.cpp
+	$(CXX) -c -o  $@ $< $(CXXFLAGS)
+
+
+#Builing the cpu only python wrapper
+$(PYWRAP)/sps_fast_utils_cpu.so: $(PYWRAP)/sps_fast_utils_cpu.o $(ODIR)/spectrum_generator_cpu.o $(ODIR)/sps_data.o  $(ODIR)/sps_write.o $(ODIR)/sps_options.o
+	$(LINK) -dynamiclib -o  $@ $^ 
+
+$(PYWRAP)/sps_fast_utils_cpu.o : $(PYWRAP)/utils_cpu.cpp
 	$(CXX) -c -o  $@ $< $(CXXFLAGS)
 
 
@@ -113,6 +130,6 @@ $(ODIR)/fit_spectrum_cpu.o : $(SRC)/fit_spectrum_cpu.cpp
 .PHONY: clean
 
 clean:
-	rm -f $(ODIR)/*.o $(BIN)/sps_c++ $(BIN)/sps_openCL
+	rm -f $(ODIR)/*.o $(PYWRAP)/*.o $(BIN)/generate_spec  $(BIN)/generate_spec_cpu $(BIN)/test_spectrum_generators  $(BIN)/fit_spectrum $(BIN)/fit_spectrum_cpu 
 
 
