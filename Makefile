@@ -12,7 +12,12 @@ CXX = g++
 LINK = $(CXX)
 
 # Flags
-CXXFLAGS = -O3 -std=c++11 -I$(IDIR) -I$(CL_H) -W -Wall
+CXXFLAGS = -O3 -std=c++11 -I$(IDIR) -I$(CL_H) -W -Wall -fPIC
+ifeq ($(shell uname), Darwin) # Apple
+    SHARED_LIB_FLAG= -dynamiclib 
+else       # Linux
+    SHARED_LIB_FLAG= -shared 
+endif
 
 #Opencl library place (Apple)
 ifeq ($(shell uname), Darwin) # Apple
@@ -101,7 +106,8 @@ $(ODIR)/fit_spectrum_cpu.o : $(SRC)/fit_spectrum_cpu.cpp
 
 #Builing the python wrapper
 $(PYWRAP)/sps_fast_utils.so: $(PYWRAP)/sps_fast_utils.o $(ODIR)/spectrum_generator.o $(ODIR)/sps_data.o  $(ODIR)/sps_write.o $(ODIR)/sps_options.o
-	$(LINK) -dynamiclib -o  $@ $^ $(LIBOPENCL)
+	$(LINK) -o  $@ $^ $(LIBOPENCL) $(SHARED_LIB_FLAG)
+
 
 $(PYWRAP)/sps_fast_utils.o : $(PYWRAP)/utils.cpp
 	$(CXX) -c -o  $@ $< $(CXXFLAGS)
@@ -109,7 +115,7 @@ $(PYWRAP)/sps_fast_utils.o : $(PYWRAP)/utils.cpp
 
 #Builing the cpu only python wrapper
 $(PYWRAP)/sps_fast_utils_cpu.so: $(PYWRAP)/sps_fast_utils_cpu.o $(ODIR)/spectrum_generator_cpu.o $(ODIR)/sps_data.o  $(ODIR)/sps_write.o $(ODIR)/sps_options.o
-	$(LINK) -dynamiclib -o  $@ $^ 
+	$(LINK) -o  $@ $^ $(SHARED_LIB_FLAG)
 
 $(PYWRAP)/sps_fast_utils_cpu.o : $(PYWRAP)/utils_cpu.cpp
 	$(CXX) -c -o  $@ $< $(CXXFLAGS)

@@ -33,10 +33,9 @@ extern "C" {
         *result_size =  (int) result.size();
         
         //copy it to new array
+        //unfortunately you cannot "steal" data from vector
         double* res_arr=new double[result.size()];
-        for( int i=0;i<(int) result.size();i++){
-            res_arr[i]=result[i];
-        }
+        std::copy(result.begin(), result.end(), res_arr);
             
         return res_arr;
     }
@@ -62,10 +61,9 @@ extern "C" {
         *result_size =  (int) result.size();
         
         //copy it to new array
+        //unfortunately you cannot "steal" data from vector
         double* res_arr=new double[result.size()];
-        for( int i=0;i<(int) result.size();i++){
-            res_arr[i]=result[i];
-        }
+        std::copy(result.begin(), result.end(), res_arr);
             
         return res_arr;
     }

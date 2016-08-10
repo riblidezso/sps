@@ -61,7 +61,10 @@ int main(int argc, char* argv[]){
     std::vector< std::vector<double> > results;
     for (size_t i=0;i<my_sps_options.num_params.size();i++){
         //generate spectrum
-        my_spec_gen.generate_spectrum(my_sps_options.num_params[i],my_sps_options.sfr_list[i]);
+        if (my_sps_options.sfr_mode=="file")
+            my_spec_gen.generate_spectrum(my_sps_options.num_params[i],my_sps_options.sfr_list[i]);
+        else
+            my_spec_gen.generate_spectrum(my_sps_options.num_params[i]);
         
         //get the result
         results.push_back(my_spec_gen.get_result());

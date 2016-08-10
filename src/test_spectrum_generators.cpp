@@ -70,13 +70,19 @@ int main(int argc, char* argv[]){
     std::vector<cl_float> temp_res_opencl;
     
     for (size_t i=0;i<my_sps_options.num_params.size();i++){
-        //generate spectrum in device
-        my_spec_gen_cpu.generate_spectrum(my_sps_options.num_params[i],my_sps_options.sfr_list[i]);
+        //generate spectrum
+        if (my_sps_options.sfr_mode=="file")
+            my_spec_gen_cpu.generate_spectrum(my_sps_options.num_params[i],my_sps_options.sfr_list[i]);
+        else
+            my_spec_gen_cpu.generate_spectrum(my_sps_options.num_params[i]);
         //get the result
         result_cpu=my_spec_gen_cpu.get_result();
         
-        //generate spectrum in device
-        my_spec_gen.generate_spectrum(my_sps_options.num_params[i],my_sps_options.sfr_list[i]);
+        //generate spectrum
+        if (my_sps_options.sfr_mode=="file")
+            my_spec_gen.generate_spectrum(my_sps_options.num_params[i],my_sps_options.sfr_list[i]);
+        else
+            my_spec_gen.generate_spectrum(my_sps_options.num_params[i]);
         //get the result
         temp_res_opencl=my_spec_gen.get_result();
         result_opencl = std::vector<double>(temp_res_opencl.begin(),temp_res_opencl.end());

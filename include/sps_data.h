@@ -1,12 +1,6 @@
 #ifndef SPS_DATA_H
 #define SPS_DATA_H
 
-#ifdef __APPLE__
-#include "OpenCL/opencl.h"
-#else
-#include "CL/cl.h"
-#endif
-
 //number of models with different metallicity 
 #define NO_METALL_MODELS 6
 
@@ -60,7 +54,7 @@ public:
 	std::vector<double> model_cont;
     
     //contigous models resampled to measurement wavelength
-    std::vector<cl_float> resampled_model_cont;
+    std::vector<double> resampled_model_cont;
 
 	//sdss_spec containers
 	std::vector<double> mes_spec_wavel;

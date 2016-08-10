@@ -32,7 +32,7 @@ extern "C" {
         std::vector<cl_float> result = my_spec_gen->get_result();
         *result_size =  (int) result.size();
         
-        //copy it to new array
+        //copy it to new array, conversion too
         double* res_arr=new double[result.size()];
         for( int i=0;i<(int) result.size();i++){
             res_arr[i]=(double) result[i];

@@ -50,10 +50,9 @@ int spectrum_generator_cpu::copy_and_move_data(sps_data& input_data){
  generate spectrum with sfh file
  */
 int spectrum_generator_cpu::generate_spectrum(std::map<std::string,double>& parameters, std::vector<double>& sfr ){
-    this->sfr=sfr;
     this->set_params(parameters);
+    this->sfr=sfr;
     this->generate_spectrum("file");
-
     return 0;
 }
 
