@@ -1,3 +1,9 @@
+#SPSFAST  A fast library for Stellar Population Synthesis
+
+The basis of the program is the GALAXEV population synthesis code, and models. The code was ported to C++, and OpenCL for GPU and multithreaded CPU parallelisation. It can generate a galaxy spectrum in 1 millisecond on a GPU and 10-20ms on 1 CPU core. It support user defined star formation history and exponential star formation. The library also contains a Markov chain Monte-Carlo fitter. A python wrapper helps to generate spectra in a very convienient and still extremely fast way.
+
+
+
 ## Compilation
 
 - If you have the opencl header and libs, please set their location in the Makefile. After that you can make everything.

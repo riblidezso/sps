@@ -127,63 +127,20 @@ int mcmc::print_config_params(){
 }
 
 
-//opt acc is the optimal acceptace ratio
+/*
+ control the step size to achieve the desired acceptance ratio
+    -control mechanism is now pure proportional
+        - integral just makes stability worse
+        - differential is said to be hard to do right
+ */
 int mcmc::control_step_size(double opt_acc){
-
-	int control_window=500;
-	///////////////////////////////////////////////////
-	//counting average values
-	///////////////////////////////////////////////////
-
-	//the equality is not neccesary
-	size_t int_window=control_window;
-
-	//count some average values for diagnostics
-	if(iter%control_window==1 && iter > (int) int_window)
-	{
-		double mean=0;
-		if ( worse_acc.size()>int_window)
-		{
-			for(size_t i=0;i<int_window;i++)
-				mean+=worse_acc[worse_acc.size()-int_window+i];
-
-			worse_acc_ratio.push_back(mean/int_window);
-		}
-
-		mean=0;
-		if (worse.size()>int_window)
-		{
-			for(size_t i=0;i<int_window;i++)
-				mean+=worse[worse.size()-int_window+i];
-
-			worse_rate.push_back(mean/int_window);
-		}
+    //caluclate acceptance ratio
+    calculate_acc_ratio();
 	
-
-		for (auto& param : acc_s )
-		{
-			mean=0;
-			if (param.second.size()>int_window)
-			{
-				for(size_t i=0;i<int_window;i++)
-					mean+=param.second[param.second.size()-int_window+i];
-				acc_ratio_s[param.first].push_back(mean/int_window);
-			}
-		}
-	}
-
-
-	///////////////////////////////////////////////////
-	//control the step size
-	///////////////////////////////////////////////////
-	//control mechanism is now pure proportional
-	//integral just makes stability worse
-	//differential is said to be hard to do right
-
 	for (auto& param : acc_ratio_s){
-		if( param.second.size()>1 && iter%control_window==1 && iter>3 ){
+		if( param.second.size()>1 && iter%CONTROL_WINDOW ==1 && iter>3 ){
 			double weigth_prop=0.6;
-			//weigth int is 0, means no integral control!!
+			//weigth int is 0, means no integral control now
 			double weigth_int=0;
 			double weigth_all=1;
 
@@ -194,7 +151,6 @@ int mcmc::control_step_size(double opt_acc){
 			double int_err=0;
 			for(size_t i=100;i<param.second.size();i++)
 				int_err+=(param.second[i]-opt_acc);
-
 
 			//modify control variable
 			//now there is the scale of the control var
@@ -208,16 +164,41 @@ int mcmc::control_step_size(double opt_acc){
 			//this should not happen	
 			if(sigmas[param.first]<0){
 				std::cout<<"ERROR sigma < 0 ";
-				return 1;
+				exit(1);
 			}
 		}
 		//record the sigma for diagnostics
 		sigmas_evol[param.first].push_back(sigmas[param.first]);
 	}
-	
 
 	return 0;
 }
+
+
+/*
+ calculate parameter wise acceptance ratio
+ */
+int mcmc::calculate_acc_ratio(){
+    //the equality is not neccesary
+    size_t int_window=CONTROL_WINDOW ;
+    
+    if(iter%CONTROL_WINDOW ==1 && iter > (int) int_window){
+        for (auto& param : acc_s ){
+            double mean=0;
+            if (param.second.size()>int_window){
+                for(size_t i=0;i<int_window;i++)
+                    mean+=param.second[param.second.size()-int_window+i];
+                acc_ratio_s[param.first].push_back(mean/int_window);
+            }
+        }
+    }
+    
+    return 0;
+    
+}
+
+
+
 
 
 /*
@@ -228,7 +209,7 @@ int mcmc::change_params(){
     this->control_step_size(0.5);
 	
 	//get next param to change
-    get_mext_param_to_change();
+    get_next_param_to_change();
     
     //generate a valid step
     generate_step();
@@ -239,7 +220,7 @@ int mcmc::change_params(){
 /*
  update parameter iterator to give the next parameter to change
  */
-int mcmc::get_mext_param_to_change(){
+int mcmc::get_next_param_to_change(){
     int noparams=(int) parameters.size();
     
     //iterates parameters in a loop until

@@ -16,6 +16,9 @@
 #define WORSE_ACCEPTED_STEP 2
 #define REJECTED_STEP 3
 
+
+#define CONTROL_WINDOW 500
+
 class mcmc{
 public:
 
@@ -29,9 +32,10 @@ public:
     int print_config_params();
 
 	int control_step_size(double opt_acc);
+    int calculate_acc_ratio();
 
 	int change_params();
-    int get_mext_param_to_change();
+    int get_next_param_to_change();
     int generate_step();
     int check_boundaries(double step);
 
